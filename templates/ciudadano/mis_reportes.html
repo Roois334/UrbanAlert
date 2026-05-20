@@ -1,0 +1,211 @@
+{% extends 'ciudadano/base_ciudadano.html' %}
+{% block title %}Mis Reportes — Urban Alert<!-- Modal confirmación eliminar -->
+<div class="ua-modal-overlay" id="modalEliminar">
+  <div class="ua-modal">
+    <div class="ua-modal-icon">🗑️</div>
+    <h3>¿Eliminar reporte?</h3>
+    <p id="modalMsg">Esta acción no se puede deshacer.</p>
+    <form method="POST" id="formEliminar">
+      <div class="ua-modal-btns">
+        <button type="button" class="ua-modal-cancel" onclick="cerrarModal()">Cancelar</button>
+        <button type="submit" class="ua-modal-confirm"><i class="fa fa-trash"></i> Sí, eliminar</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+function abrirModalEliminar(id, titulo) {
+  document.getElementById('modalMsg').textContent = '"' + titulo + '" será eliminado permanentemente.';
+  document.getElementById('formEliminar').action = '/reportes/' + id + '/eliminar';
+  document.getElementById('modalEliminar').classList.add('open');
+}
+function cerrarModal() {
+  document.getElementById('modalEliminar').classList.remove('open');
+}
+// Cerrar al hacer click fuera del modal
+document.getElementById('modalEliminar').addEventListener('click', function(e) {
+  if (e.target === this) cerrarModal();
+});
+</script>
+{% endblock %}
+
+{% block content %}
+<style>
+  .mr-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:1.5rem; }
+  .mr-header h2 { font-size:1.3rem; font-weight:800; color:#fff; }
+
+  .mr-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(280px,1fr)); gap:1rem; }
+
+  .mr-card {
+    background: linear-gradient(145deg,#181818,#141414);
+    border: 1px solid rgba(255,255,255,.08);
+    border-radius: 16px; overflow: hidden;
+    transition: transform .2s, border-color .2s;
+  }
+  .mr-card:hover { transform:translateY(-3px); border-color:rgba(255,107,0,.25); }
+
+  .mr-img {
+    width:100%; height:160px; object-fit:cover;
+    background: #1a1a1a;
+    display:flex; align-items:center; justify-content:center;
+    font-size:2.5rem;
+  }
+  .mr-body { padding: 1rem 1.25rem; }
+  .mr-top { display:flex; justify-content:space-between; align-items:center; margin-bottom:.6rem; }
+  .mr-date { font-size:.7rem; color:rgba(255,255,255,.3); }
+  .mr-title { font-size:.93rem; font-weight:700; color:#fff; margin-bottom:.4rem; line-height:1.3;
+    overflow:hidden; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; }
+  .mr-meta { display:flex; gap:.5rem; font-size:.75rem; color:rgba(255,255,255,.35); margin-bottom:.9rem; }
+  .mr-meta span::before { content:'•'; margin-right:.3rem; }
+  .mr-meta span:first-child::before { content:''; margin:0; }
+
+  .ub { display:inline-flex;align-items:center;padding:.22rem .65rem;border-radius:99px;font-size:.7rem;font-weight:700; }
+  .ub-resuelto    { background:rgba(46,204,113,.15); color:#2ecc71; }
+  .ub-pendiente   { background:rgba(255,193,7,.12);  color:#ffc107; }
+  .ub-en_progreso { background:rgba(52,152,219,.15); color:#3498db; }
+  .ub-asignado    { background:rgba(156,39,176,.12); color:#ce93d8; }
+  .ub-en_revision { background:rgba(255,107,0,.12);  color:#FF6B00; }
+  .ub-rechazado   { background:rgba(231,76,60,.12);  color:#e74c3c; }
+
+  .mr-btn {
+    display:flex; align-items:center; justify-content:center; gap:.4rem;
+    width:100%; padding:.6rem;
+    background:rgba(255,107,0,.08); border:1px solid rgba(255,107,0,.2);
+    color:#FF6B00; font-size:.8rem; font-weight:700;
+    border-radius:10px; text-decoration:none;
+    transition:background .15s;
+  }
+  .mr-btn:hover { background:rgba(255,107,0,.16); color:#FF6B00; }
+
+  .mr-empty { text-align:center; padding:4rem 2rem;
+    background:linear-gradient(145deg,#181818,#141414);
+    border:1px solid rgba(255,255,255,.08); border-radius:16px; }
+  .mr-empty-icon { font-size:3.5rem; margin-bottom:1rem; opacity:.35; }
+  .mr-empty h3 { font-size:1.1rem; font-weight:700; color:rgba(255,255,255,.7); margin-bottom:.5rem; }
+  .mr-empty p  { font-size:.85rem; color:rgba(255,255,255,.35); margin-bottom:1.5rem; }
+
+  .mr-btn-delete {
+    display:flex; align-items:center; justify-content:center; gap:.4rem;
+    width:100%; padding:.6rem; margin-top:.5rem;
+    background:rgba(231,76,60,.07); border:1px solid rgba(231,76,60,.2);
+    color:#e74c3c; font-size:.8rem; font-weight:700;
+    border-radius:10px; cursor:pointer;
+    transition:background .15s;
+  }
+  .mr-btn-delete:hover { background:rgba(231,76,60,.18); }
+
+  /* Modal */
+  .ua-modal-overlay {
+    display:none; position:fixed; inset:0;
+    background:rgba(0,0,0,.7); backdrop-filter:blur(4px);
+    z-index:9999; align-items:center; justify-content:center;
+  }
+  .ua-modal-overlay.open { display:flex; }
+  .ua-modal {
+    background:#1a1a1a; border:1px solid rgba(255,255,255,.1);
+    border-radius:16px; padding:2rem; max-width:380px; width:90%;
+    box-shadow:0 20px 60px rgba(0,0,0,.6);
+    animation: modalIn .2s ease;
+  }
+  @keyframes modalIn { from{opacity:0;transform:scale(.95)} to{opacity:1;transform:scale(1)} }
+  .ua-modal-icon { font-size:2.5rem; text-align:center; margin-bottom:1rem; }
+  .ua-modal h3 { font-size:1.1rem; font-weight:800; color:#fff; text-align:center; margin-bottom:.5rem; }
+  .ua-modal p  { font-size:.85rem; color:rgba(255,255,255,.45); text-align:center; margin-bottom:1.5rem; line-height:1.5; }
+  .ua-modal-btns { display:flex; gap:.75rem; }
+  .ua-modal-cancel {
+    flex:1; padding:.7rem; border-radius:10px;
+    background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.1);
+    color:rgba(255,255,255,.6); font-weight:700; cursor:pointer; font-size:.85rem;
+    transition:background .15s;
+  }
+  .ua-modal-cancel:hover { background:rgba(255,255,255,.1); }
+  .ua-modal-confirm {
+    flex:1; padding:.7rem; border-radius:10px;
+    background:rgba(231,76,60,.15); border:1px solid rgba(231,76,60,.35);
+    color:#e74c3c; font-weight:700; cursor:pointer; font-size:.85rem;
+    transition:background .15s;
+  }
+  .ua-modal-confirm:hover { background:rgba(231,76,60,.28); }
+</style>
+
+<div class="mr-header">
+  <h2>Mis Reportes <span style="color:rgba(255,255,255,.3);font-weight:400;font-size:.9rem;">({{ reportes|length }})</span></h2>
+  <a href="{{ url_for('nuevo_reporte') }}" class="btn-ua btn-primary-ua">
+    <i class="fa fa-plus"></i> Nuevo reporte
+  </a>
+</div>
+
+{% if reportes %}
+<div class="mr-grid">
+  {% for r in reportes %}
+  <div class="mr-card">
+    <div class="mr-img">
+      {% if r.imagen_principal %}
+        <img src="{{ url_for('uploaded_file', filename=r.imagen_principal) }}" alt="" style="width:100%;height:100%;object-fit:cover;">
+      {% else %}🚧{% endif %}
+    </div>
+    <div class="mr-body">
+      <div class="mr-top">
+        <span class="ub ub-{{ r.estado }}">{{ r.estado.replace('_',' ').title() }}</span>
+        <span class="mr-date">{{ r.creado_en.strftime('%d/%m/%Y') if r.creado_en else '' }}</span>
+      </div>
+      <div class="mr-title">{{ r.titulo }}</div>
+      <div class="mr-meta">
+        <span>{{ r.ciudad }}</span>
+        <span>{{ r.categoria_nombre or 'Sin categoría' }}</span>
+      </div>
+      <a href="{{ url_for('detalle_reporte', reporte_id=r.id) }}" class="mr-btn">
+        <i class="fa fa-eye"></i> Ver detalle
+      </a>
+      {% if r.estado in ('pendiente', 'rechazado') %}
+      <button class="mr-btn-delete"
+        onclick="abrirModalEliminar({{ r.id }}, '{{ r.titulo|e }}')"
+        type="button">
+        <i class="fa fa-trash"></i> Eliminar
+      </button>
+      {% endif %}
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% else %}
+<div class="mr-empty">
+  <div class="mr-empty-icon">📋</div>
+  <h3>Aún no tienes reportes</h3>
+  <p>¡Sé el primero en reportar un problema en tu ciudad!</p>
+  <a href="{{ url_for('nuevo_reporte') }}" class="btn-ua btn-primary-ua">
+    <i class="fa fa-plus"></i> Crear mi primer reporte
+  </a>
+</div>
+{% endif %}
+<!-- Modal confirmación eliminar -->
+<div class="ua-modal-overlay" id="modalEliminar">
+  <div class="ua-modal">
+    <div class="ua-modal-icon">🗑️</div>
+    <h3>¿Eliminar reporte?</h3>
+    <p id="modalMsg">Esta acción no se puede deshacer.</p>
+    <form method="POST" id="formEliminar">
+      <div class="ua-modal-btns">
+        <button type="button" class="ua-modal-cancel" onclick="cerrarModal()">Cancelar</button>
+        <button type="submit" class="ua-modal-confirm"><i class="fa fa-trash"></i> Sí, eliminar</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+function abrirModalEliminar(id, titulo) {
+  document.getElementById('modalMsg').textContent = '"' + titulo + '" será eliminado permanentemente.';
+  document.getElementById('formEliminar').action = '/reportes/' + id + '/eliminar';
+  document.getElementById('modalEliminar').classList.add('open');
+}
+function cerrarModal() {
+  document.getElementById('modalEliminar').classList.remove('open');
+}
+// Cerrar al hacer click fuera del modal
+document.getElementById('modalEliminar').addEventListener('click', function(e) {
+  if (e.target === this) cerrarModal();
+});
+</script>
+{% endblock %}

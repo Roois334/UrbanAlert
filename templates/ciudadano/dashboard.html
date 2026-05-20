@@ -1,0 +1,153 @@
+{% extends 'ciudadano/base_ciudadano.html' %}
+{% block title %}Mi Panel — Urban Alert{% endblock %}
+
+{% block content %}
+<style>
+  .ua-kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1rem;
+    margin-bottom: 1.75rem;
+  }
+  .ua-kpi {
+    background: linear-gradient(145deg, #181818 0%, #141414 100%);
+    border: 1px solid rgba(255,255,255,.08);
+    border-radius: 16px;
+    padding: 1.4rem 1.5rem;
+    position: relative;
+    overflow: hidden;
+    transition: transform .2s, border-color .2s;
+  }
+  .ua-kpi:hover { transform: translateY(-2px); border-color: rgba(255,107,0,.25); }
+  .ua-kpi::before { content:''; position:absolute; top:0; left:0; right:0; height:3px; }
+  .ua-kpi.orange::before { background: linear-gradient(90deg, #FF6B00, #ff8c35); }
+  .ua-kpi.green::before  { background: linear-gradient(90deg, #2ecc71, #27ae60); }
+  .ua-kpi.blue::before   { background: linear-gradient(90deg, #3498db, #1565c0); }
+  .ua-kpi-icon {
+    width: 42px; height: 42px; border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.2rem; margin-bottom: .85rem;
+  }
+  .ua-kpi.orange .ua-kpi-icon { background: rgba(255,107,0,.12); color: #FF6B00; }
+  .ua-kpi.green  .ua-kpi-icon { background: rgba(46,204,113,.12); color: #2ecc71; }
+  .ua-kpi.blue   .ua-kpi-icon { background: rgba(52,152,219,.12); color: #3498db; }
+  .ua-kpi-val {
+    font-family: var(--font-display);
+    font-size: 2.4rem; font-weight: 900; line-height: 1;
+    margin-bottom: .3rem; letter-spacing: -.03em;
+  }
+  .ua-kpi.orange .ua-kpi-val { color: #FF6B00; }
+  .ua-kpi.green  .ua-kpi-val { color: #2ecc71; }
+  .ua-kpi.blue   .ua-kpi-val { color: #3498db; }
+  .ua-kpi-lbl { font-size: .72rem; font-weight: 700; text-transform: uppercase; letter-spacing: .07em; color: rgba(255,255,255,.38); }
+
+  .ua-section { background: linear-gradient(145deg,#181818,#141414); border:1px solid rgba(255,255,255,.08); border-radius:16px; overflow:hidden; }
+  .ua-section-head { padding:1.1rem 1.5rem; border-bottom:1px solid rgba(255,255,255,.07); display:flex; align-items:center; justify-content:space-between; }
+  .ua-section-head h3 { font-size:.95rem; font-weight:700; color:#fff; display:flex; align-items:center; gap:.5rem; }
+  .ua-section-head h3 i { color:#FF6B00; font-size:.9rem; }
+  .ua-ver-btn { padding:.4rem .9rem; background:rgba(255,107,0,.1); border:1px solid rgba(255,107,0,.25); color:#FF6B00; font-size:.78rem; font-weight:700; border-radius:8px; text-decoration:none; transition:background .18s; }
+  .ua-ver-btn:hover { background:rgba(255,107,0,.18); color:#FF6B00; }
+
+  .ua-tbl { width:100%; border-collapse:collapse; }
+  .ua-tbl th { padding:.7rem 1.5rem; font-size:.67rem; font-weight:700; text-transform:uppercase; letter-spacing:.08em; color:#FF6B00; border-bottom:1px solid rgba(255,255,255,.07); text-align:left; }
+  .ua-tbl td { padding:.8rem 1.5rem; border-bottom:1px solid rgba(255,255,255,.05); font-size:.875rem; color:rgba(255,255,255,.82); vertical-align:middle; }
+  .ua-tbl tr:last-child td { border-bottom:none; }
+  .ua-tbl tbody tr:hover { background:rgba(255,107,0,.04); }
+  .t-id { color:rgba(255,255,255,.3)!important; font-size:.75rem!important; }
+  .t-title { font-weight:600; color:#fff; }
+  .t-sub { font-size:.72rem; color:rgba(255,255,255,.35); margin-top:2px; }
+
+  .ub { display:inline-flex;align-items:center;gap:.3rem;padding:.25rem .7rem;border-radius:99px;font-size:.72rem;font-weight:700; }
+  .ub-resuelto    { background:rgba(46,204,113,.15); color:#2ecc71; }
+  .ub-pendiente   { background:rgba(255,193,7,.12);  color:#ffc107; }
+  .ub-en_progreso { background:rgba(52,152,219,.15); color:#3498db; }
+  .ub-asignado    { background:rgba(156,39,176,.12); color:#ce93d8; }
+  .ub-en_revision { background:rgba(255,107,0,.12);  color:#FF6B00; }
+  .ub-rechazado   { background:rgba(231,76,60,.12);  color:#e74c3c; }
+
+  .ua-empty { text-align:center; padding:3.5rem 2rem; }
+  .ua-empty-icon { font-size:3.5rem; margin-bottom:1rem; opacity:.4; }
+  .ua-empty h4 { font-size:1rem; font-weight:700; color:rgba(255,255,255,.7); margin-bottom:.5rem; }
+  .ua-empty p  { font-size:.85rem; color:rgba(255,255,255,.35); margin-bottom:1.5rem; }
+
+  .ua-quick { background:linear-gradient(135deg,rgba(255,107,0,.1),rgba(255,107,0,.04)); border:1px solid rgba(255,107,0,.2); border-radius:14px; padding:1.25rem 1.5rem; display:flex; align-items:center; justify-content:space-between; margin-bottom:1.75rem; }
+  .ua-quick-left { display:flex; align-items:center; gap:1rem; }
+  .ua-quick-ico { width:46px;height:46px;border-radius:12px;background:rgba(255,107,0,.15);display:flex;align-items:center;justify-content:center;color:#FF6B00;font-size:1.3rem;flex-shrink:0; }
+  .ua-quick h4 { font-size:.95rem; font-weight:700; color:#fff; margin-bottom:.15rem; }
+  .ua-quick p  { font-size:.78rem; color:rgba(255,255,255,.45); }
+</style>
+
+<!-- KPIs -->
+<div class="ua-kpi-grid">
+  <div class="ua-kpi orange">
+    <div class="ua-kpi-icon"><i class="fa fa-flag"></i></div>
+    <div class="ua-kpi-val">{{ total }}</div>
+    <div class="ua-kpi-lbl">Mis reportes</div>
+  </div>
+  <div class="ua-kpi green">
+    <div class="ua-kpi-icon"><i class="fa fa-check-circle"></i></div>
+    <div class="ua-kpi-val">{{ resueltos }}</div>
+    <div class="ua-kpi-lbl">Resueltos</div>
+  </div>
+  <div class="ua-kpi blue">
+    <div class="ua-kpi-icon"><i class="fa fa-clock"></i></div>
+    <div class="ua-kpi-val">{{ pendientes }}</div>
+    <div class="ua-kpi-lbl">Pendientes</div>
+  </div>
+</div>
+
+<!-- CTA rápido -->
+<div class="ua-quick">
+  <div class="ua-quick-left">
+    <div class="ua-quick-ico"><i class="fa fa-bolt"></i></div>
+    <div>
+      <h4>¿Ves un problema en tu ciudad?</h4>
+      <p>Reporta huecos, basura o daños urbanos. Nuestra IA lo analiza al instante.</p>
+    </div>
+  </div>
+  <a href="{{ url_for('nuevo_reporte') }}" class="btn-ua btn-primary-ua">
+    <i class="fa fa-plus"></i> Crear reporte
+  </a>
+</div>
+
+<!-- Últimos reportes -->
+<div class="ua-section">
+  <div class="ua-section-head">
+    <h3><i class="fa fa-flag"></i> Mis últimos reportes</h3>
+    <a href="{{ url_for('mis_reportes') }}" class="ua-ver-btn">Ver todos</a>
+  </div>
+  <div style="overflow-x:auto;">
+    {% if mis_reportes %}
+    <table class="ua-tbl">
+      <thead><tr><th>#</th><th>Título</th><th>Categoría</th><th>Estado</th><th>Fecha</th><th></th></tr></thead>
+      <tbody>
+        {% for r in mis_reportes[:8] %}
+        <tr>
+          <td class="t-id">#{{ r.id }}</td>
+          <td>
+            <div class="t-title">{{ r.titulo[:45] }}{% if r.titulo|length > 45 %}…{% endif %}</div>
+            {% if r.gravedad_ia %}<div class="t-sub">IA: {{ r.gravedad_ia|round(0)|int }}%</div>{% endif %}
+          </td>
+          <td style="color:rgba(255,255,255,.5);font-size:.8rem;">{{ r.categoria_nombre or '—' }}</td>
+          <td><span class="ub ub-{{ r.estado }}">{{ r.estado.replace('_',' ').title() }}</span></td>
+          <td style="font-size:.78rem;color:rgba(255,255,255,.35);">{{ r.creado_en.strftime('%d/%m/%Y') if r.creado_en else '—' }}</td>
+          <td>
+            <a href="{{ url_for('detalle_reporte', reporte_id=r.id) }}" style="color:rgba(255,255,255,.3);transition:color .15s;" onmouseover="this.style.color='#FF6B00'" onmouseout="this.style.color='rgba(255,255,255,.3)'">
+              <i class="fa fa-eye"></i>
+            </a>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <div class="ua-empty">
+      <div class="ua-empty-icon">📋</div>
+      <h4>Aún no tienes reportes</h4>
+      <p>¡Sé el primero en reportar un problema en tu ciudad!</p>
+      <a href="{{ url_for('nuevo_reporte') }}" class="btn-ua btn-primary-ua"><i class="fa fa-plus"></i> Crear mi primer reporte</a>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

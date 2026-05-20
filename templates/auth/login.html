@@ -1,0 +1,414 @@
+{% extends 'landing/base.html' %}
+{% block title %}Iniciar Sesión — Urban Alert{% endblock %}
+{% block content %}
+
+<div class="ua-lw">
+  <div class="ua-lc">
+
+    <!-- Glow de fondo decorativo -->
+    <div class="ua-glow"></div>
+
+    <!-- Logo -->
+    <div class="ua-llogo">
+      <img src="{{ url_for('static', filename='images/logo.png') }}" alt="UrbanAlert" style="height:110px;width:auto;object-fit:contain;display:block;margin:0 auto 4px;filter:drop-shadow(0 0 12px rgba(255,107,0,0.7));">
+      <h1 class="ua-ltitle">Urban<span style="color:#FF6B00;"> Alert</span></h1>
+      <p class="ua-lsub">Ingresa a tu cuenta</p>
+    </div>
+
+    <!-- Acceso rápido -->
+    <div id="quickAccess"></div>
+
+    <!-- Mensajes flash -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        {% for cat, msg in messages %}
+          <div class="ua-alert ua-alert-{{ cat }}">
+            <i class="fa {% if cat == 'success' %}fa-circle-check{% elif cat == 'danger' %}fa-circle-xmark{% else %}fa-circle-info{% endif %}"></i>
+            {{ msg }}
+          </div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+
+    <!-- Formulario -->
+    <form method="POST" class="ua-form">
+      <div class="ua-fg">
+        <label class="ua-fl">Correo electrónico</label>
+        <div class="ua-iw">
+          <i class="fa fa-envelope ua-ic"></i>
+          <input type="email" name="email" id="emailInp" class="ua-fi"
+                 placeholder="tu@correo.com" autocomplete="email" inputmode="email" required>
+        </div>
+      </div>
+      <div class="ua-fg">
+        <label class="ua-fl">Contraseña</label>
+        <div class="ua-iw">
+          <i class="fa fa-lock ua-ic"></i>
+          <input type="password" name="password" id="pwInp" class="ua-fi ua-fi-r"
+                 placeholder="••••••••" autocomplete="current-password" required>
+          <button type="button" class="ua-eye" onclick="uaTogglePw()">
+            <i id="eyeO" class="fa fa-eye"></i>
+            <i id="eyeC" class="fa fa-eye-slash" style="display:none"></i>
+          </button>
+        </div>
+      </div>
+      <button type="submit" class="ua-lbtn">
+        <i class="fa fa-right-to-bracket"></i> Iniciar sesión
+      </button>
+    </form>
+
+    <!-- Divider -->
+    <div class="ua-divider"><span>¿Nuevo en Urban Alert?</span></div>
+
+    <!-- Botón registro -->
+    <a href="{{ url_for('registro') }}" class="ua-reg-btn">
+      <i class="fa fa-user-plus"></i> Crear cuenta gratis
+    </a>
+
+  </div>
+</div>
+
+<style>
+/* ═══ WRAPPER ═══ */
+.ua-lw {
+  min-height: calc(100vh - 74px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px 16px;
+  background: radial-gradient(ellipse 80% 60% at 50% 0%, rgba(255,107,0,.12) 0%, transparent 70%),
+              #0d0d0d;
+}
+
+/* ═══ CARD ═══ */
+.ua-lc {
+  position: relative;
+  background: linear-gradient(160deg, #1a1008 0%, #111111 50%, #0f0f0f 100%);
+  border: 1px solid rgba(255,107,0,.22);
+  border-radius: 22px;
+  padding: 36px 30px 28px;
+  width: 100%;
+  max-width: 430px;
+  overflow: hidden;
+  box-shadow: 0 0 0 1px rgba(255,255,255,.03),
+              0 30px 80px rgba(0,0,0,.7),
+              0 0 60px rgba(255,107,0,.06);
+}
+/* línea superior brillante */
+.ua-lc::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 50%;
+  transform: translateX(-50%);
+  width: 55%;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(255,107,0,.7), transparent);
+}
+
+/* ═══ GLOW ═══ */
+.ua-glow {
+  position: absolute;
+  top: -60px; left: 50%;
+  transform: translateX(-50%);
+  width: 200px; height: 200px;
+  background: radial-gradient(circle, rgba(255,107,0,.15) 0%, transparent 70%);
+  pointer-events: none;
+}
+
+/* ═══ LOGO ═══ */
+.ua-llogo { text-align: center; margin-bottom: 18px; }
+.ua-lring {
+  width: 72px; height: 72px;
+  border-radius: 20px;
+  background: rgba(255,107,0,.08);
+  border: 1.5px solid rgba(255,107,0,.3);
+  display: flex; align-items: center; justify-content: center;
+  margin: 0 auto 12px;
+  box-shadow: 0 0 20px rgba(255,107,0,.1);
+}
+.ua-ltitle {
+  font-size: 1.6rem; font-weight: 900;
+  color: #fff; letter-spacing: -.03em; margin: 0 0 4px;
+}
+.ua-lsub { font-size: .84rem; color: #888; margin: 0; }
+
+/* ═══ ALERTS ═══ */
+.ua-alert {
+  display: flex; align-items: center; gap: 8px;
+  padding: 10px 14px; border-radius: 10px;
+  font-size: .84rem; margin-bottom: 14px;
+}
+.ua-alert-success { background: rgba(46,204,113,.1); border: 1px solid rgba(46,204,113,.3); color: #2ecc71; }
+.ua-alert-danger   { background: rgba(231,76,60,.1);  border: 1px solid rgba(231,76,60,.3);  color: #e74c3c; }
+.ua-alert-warning  { background: rgba(255,149,0,.1);  border: 1px solid rgba(255,149,0,.3);  color: #FF9500; }
+
+/* ═══ FORM ═══ */
+.ua-form { margin-bottom: 0; }
+.ua-fg { margin-bottom: 14px; }
+.ua-fl {
+  display: block; font-size: .71rem; font-weight: 700;
+  color: #777; text-transform: uppercase; letter-spacing: .06em; margin-bottom: 7px;
+}
+.ua-iw { position: relative; }
+.ua-ic {
+  position: absolute; left: 14px; top: 50%;
+  transform: translateY(-50%);
+  color: #555; pointer-events: none; font-size: .85rem; z-index: 1;
+}
+.ua-fi {
+  width: 100%;
+  padding: 13px 14px 13px 42px;
+  background: rgba(255,255,255,.04);
+  border: 1px solid rgba(255,255,255,.1);
+  border-radius: 11px;
+  color: #fff;
+  font-size: 15px;
+  outline: none;
+  transition: border-color .2s, background .2s, box-shadow .2s;
+  -webkit-appearance: none;
+  box-sizing: border-box;
+}
+.ua-fi::placeholder { color: #444; }
+.ua-fi:focus {
+  border-color: rgba(255,107,0,.55);
+  background: rgba(255,107,0,.04);
+  box-shadow: 0 0 0 3px rgba(255,107,0,.1);
+}
+.ua-fi-r { padding-right: 46px; }
+.ua-eye {
+  position: absolute; right: 12px; top: 50%;
+  transform: translateY(-50%);
+  background: none; border: none; cursor: pointer;
+  color: #555; padding: 5px;
+  display: flex; align-items: center;
+  border-radius: 6px;
+  transition: color .15s;
+  -webkit-tap-highlight-color: transparent;
+}
+.ua-eye:hover { color: #FF6B00; }
+
+/* ═══ BOTÓN PRINCIPAL ═══ */
+.ua-lbtn {
+  width: 100%; padding: 14px;
+  margin-top: 4px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #FF6B00, #e55a00);
+  color: #fff;
+  font-size: .93rem; font-weight: 800;
+  border: none; cursor: pointer;
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  box-shadow: 0 6px 24px rgba(255,107,0,.35);
+  transition: opacity .18s, transform .18s, box-shadow .18s;
+  -webkit-tap-highlight-color: transparent;
+}
+.ua-lbtn:hover {
+  box-shadow: 0 8px 30px rgba(255,107,0,.5);
+  transform: translateY(-1px);
+}
+.ua-lbtn:active { opacity: .88; transform: scale(.98); }
+
+/* ═══ DIVIDER ═══ */
+.ua-divider {
+  display: flex; align-items: center; gap: 12px;
+  margin: 22px 0 16px;
+  color: #444; font-size: .75rem;
+}
+.ua-divider::before, .ua-divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: rgba(255,255,255,.08);
+}
+
+/* ═══ BOTÓN REGISTRO ═══ */
+.ua-reg-btn {
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  width: 100%; padding: 13px;
+  border-radius: 12px;
+  background: transparent;
+  border: 1px solid rgba(255,107,0,.35);
+  color: #FF8C40;
+  font-size: .91rem; font-weight: 700;
+  text-decoration: none;
+  transition: background .18s, border-color .18s, color .18s, transform .18s;
+  -webkit-tap-highlight-color: transparent;
+}
+.ua-reg-btn:hover {
+  background: rgba(255,107,0,.08);
+  border-color: rgba(255,107,0,.6);
+  color: #FF6B00;
+  transform: translateY(-1px);
+}
+.ua-reg-btn:active { transform: scale(.98); }
+
+/* ═══ ACCESO RÁPIDO ═══ */
+.qa-box {
+  margin-bottom: 20px;
+  border: 1px solid rgba(255,107,0,.15);
+  border-radius: 14px;
+  overflow: hidden;
+  background: rgba(255,107,0,.03);
+}
+.qa-tabs {
+  display: flex; overflow-x: auto; scrollbar-width: none;
+  border-bottom: 1px solid rgba(255,107,0,.1);
+}
+.qa-tabs::-webkit-scrollbar { display: none; }
+.qa-tab {
+  flex-shrink: 0;
+  padding: 10px 16px;
+  font-size: .74rem; font-weight: 700;
+  color: #666;
+  border: none; background: transparent; cursor: pointer;
+  transition: color .15s, background .15s;
+  -webkit-tap-highlight-color: transparent;
+  white-space: nowrap;
+  border-bottom: 2px solid transparent;
+}
+.qa-tab.on {
+  color: #FF6B00;
+  border-bottom-color: #FF6B00;
+  background: rgba(255,107,0,.06);
+}
+.qa-list { padding: 8px; }
+.qa-item {
+  display: flex; align-items: center; gap: 10px;
+  padding: 9px 11px;
+  border-radius: 10px;
+  border: 1px solid rgba(255,255,255,.05);
+  background: transparent;
+  cursor: pointer; width: 100%;
+  transition: background .15s, border-color .15s;
+  -webkit-tap-highlight-color: transparent;
+  margin-bottom: 5px; text-align: left;
+}
+.qa-item:last-child { margin-bottom: 0; }
+.qa-item:hover, .qa-item:active {
+  background: rgba(255,107,0,.09);
+  border-color: rgba(255,107,0,.3);
+}
+.qa-av {
+  width: 36px; height: 36px;
+  border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: .85rem; font-weight: 800; flex-shrink: 0;
+}
+.av-admin    { background: rgba(255,107,0,.2);  color: #FF6B00; }
+.av-tecnico  { background: rgba(255,165,50,.15); color: #FFA532; }
+.av-ciudadano{ background: rgba(255,200,80,.1);  color: #FFC850; }
+.qa-info { flex: 1; min-width: 0; }
+.qa-name {
+  font-size: .83rem; font-weight: 700; color: #e8e8e8;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.qa-role { font-size: .69rem; color: #666; margin-top: 1px; }
+.qa-arr { color: #FF6B00; opacity: .5; flex-shrink: 0; }
+.qa-hint {
+  text-align: center; font-size: .64rem;
+  color: rgba(255,255,255,.18);
+  padding: 0 10px 9px;
+  border-top: 1px solid rgba(255,255,255,.05);
+  margin-top: 4px;
+}
+</style>
+
+<script>
+(function(){
+  var ROLES = {
+    super_admin:   {label:'Super Admin', av:'av-admin'},
+    administrador: {label:'Admin',       av:'av-admin'},
+    tecnico:       {label:'Técnico',     av:'av-tecnico'},
+    ciudadano:     {label:'Ciudadano',   av:'av-ciudadano'}
+  };
+  var ORDER = ['super_admin','administrador','tecnico','ciudadano'];
+  var grupos = {}, cur = null;
+  var wrap = document.getElementById('quickAccess');
+
+  fetch('/api/usuarios-acceso')
+    .then(function(r){ return r.json(); })
+    .then(function(users){
+      if(!users || !users.length) return;
+      users.forEach(function(u){
+        if(!grupos[u.rol]) grupos[u.rol] = [];
+        grupos[u.rol].push(u);
+      });
+      var rolesDisp = ORDER.filter(function(r){ return grupos[r]; });
+      if(!rolesDisp.length) return;
+      cur = rolesDisp[0];
+
+      function list(rol){
+        var cfg = ROLES[rol] || {label: rol, av: 'av-ciudadano'};
+        return grupos[rol].map(function(u){
+          var ini = (u.nombre[0] + (u.apellido ? u.apellido[0] : '')).toUpperCase();
+          return '<button type="button" class="qa-item" onclick="uaFillCred(\''+u.email+'\',\''+u.pw+'\')">'
+            + '<div class="qa-av '+cfg.av+'">'+ini+'</div>'
+            + '<div class="qa-info">'
+              + '<div class="qa-name">'+u.nombre+' '+u.apellido+'</div>'
+              + '<div class="qa-role">'+cfg.label+' · '+u.email+'</div>'
+            + '</div>'
+            + '<span class="qa-arr">&#8594;</span>'
+          + '</button>';
+        }).join('');
+      }
+
+      function render(){
+        var tabs = rolesDisp.map(function(r){
+          var cfg = ROLES[r] || {label: r};
+          return '<button type="button" class="qa-tab'+(r===cur?' on':'')+'" onclick="uaQaTab(\''+r+'\')">'
+            + cfg.label + ' ' + grupos[r].length
+          + '</button>';
+        }).join('');
+        wrap.innerHTML =
+          '<div class="qa-box">'
+          + '<div class="qa-tabs">'+tabs+'</div>'
+          + '<div class="qa-list" id="qaList">'+list(cur)+'</div>'
+          + '<div class="qa-hint">Toca un usuario para autocompletar</div>'
+          + '</div>';
+      }
+
+      window.uaQaTab = function(r){ cur = r; render(); };
+      render();
+    })
+    .catch(function(){});
+})();
+
+function uaFillCred(e, p){
+  var ei = document.getElementById('emailInp');
+  var pi = document.getElementById('pwInp');
+
+  ei.value = e;
+  pi.value = p || '';
+
+  // Feedback visual en email
+  ei.style.transition = 'border-color .2s, box-shadow .2s';
+  ei.style.borderColor = 'rgba(255,107,0,.8)';
+  ei.style.boxShadow   = '0 0 0 3px rgba(255,107,0,.18)';
+
+  // Feedback visual en contraseña
+  pi.style.transition = 'border-color .2s, box-shadow .2s';
+  pi.style.borderColor = 'rgba(255,107,0,.8)';
+  pi.style.boxShadow   = '0 0 0 3px rgba(255,107,0,.18)';
+
+  setTimeout(function(){
+    ei.style.borderColor = ''; ei.style.boxShadow = '';
+    pi.style.borderColor = ''; pi.style.boxShadow = '';
+  }, 900);
+
+  // Si tiene contraseña, mover foco al botón para que solo pulse Enter
+  if(p){ document.querySelector('.ua-lbtn').focus(); }
+  else  { pi.focus(); }
+}
+
+function uaTogglePw(){
+  var i = document.getElementById('pwInp');
+  var o = document.getElementById('eyeO');
+  var c = document.getElementById('eyeC');
+  if(i.type === 'password'){
+    i.type = 'text'; o.style.display = 'none'; c.style.display = 'inline';
+  } else {
+    i.type = 'password'; o.style.display = 'inline'; c.style.display = 'none';
+  }
+}
+</script>
+
+{% endblock %}

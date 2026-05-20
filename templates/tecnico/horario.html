@@ -1,0 +1,269 @@
+{% extends 'tecnico/base_tecnico.html' %}
+{% block title %}Mi Horario — Urban Alert{% endblock %}
+
+{% block head %}
+<style>
+  /* ── HERO ── */
+  .hor-hero {
+    background: linear-gradient(135deg, rgba(255,107,0,.1) 0%, rgba(0,0,0,0) 100%);
+    border: 1px solid rgba(255,107,0,.18);
+    border-radius: 22px; padding: 2rem 2.5rem; margin-bottom: 2rem;
+    display: flex; align-items: center; gap: 1.5rem;
+    position: relative; overflow: hidden;
+  }
+  .hor-hero::before {
+    content: ''; position: absolute; top: -40px; right: -40px;
+    width: 180px; height: 180px; border-radius: 50%;
+    background: radial-gradient(circle, rgba(255,107,0,.07) 0%, transparent 70%);
+    pointer-events: none;
+  }
+  .hor-hero-icon {
+    width: 64px; height: 64px; border-radius: 20px; flex-shrink: 0;
+    background: rgba(255,107,0,.12); border: 1px solid rgba(255,107,0,.3);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.7rem; color: #FF6B00;
+    box-shadow: 0 8px 24px rgba(255,107,0,.15);
+  }
+  .hor-hero-title { font-size: 1.5rem; font-weight: 900; color: #fff; margin-bottom: .3rem; letter-spacing: -.02em; }
+  .hor-hero-sub   { font-size: .87rem; color: rgba(255,255,255,.4); line-height: 1.5; }
+
+  /* ── LEYENDA ── */
+  .hor-legend {
+    display: flex; gap: 1.5rem; margin-bottom: 1.8rem; flex-wrap: wrap;
+    padding: .75rem 1.2rem;
+    background: rgba(255,255,255,.03); border: 1px solid rgba(255,255,255,.06);
+    border-radius: 12px;
+  }
+  .hor-legend-item { display: flex; align-items: center; gap: .5rem; font-size: .79rem; color: rgba(255,255,255,.5); }
+  .hor-legend-dot { width: 10px; height: 10px; border-radius: 50%; }
+
+  /* ── GRID DE DÍAS ── */
+  .hor-week-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: .75rem;
+    margin-bottom: 2rem;
+  }
+
+  /* ── CARD DÍA ── */
+  .hor-day-card {
+    background: linear-gradient(145deg, #191919, #141414);
+    border: 1.5px solid rgba(255,255,255,.07);
+    border-radius: 18px; padding: 1.2rem .9rem;
+    display: flex; flex-direction: column; align-items: center; gap: .9rem;
+    cursor: pointer; transition: all .22s; position: relative; overflow: hidden;
+    min-height: 150px;
+  }
+  .hor-day-card::after {
+    content: ''; position: absolute; bottom: 0; left: 0; right: 0; height: 3px;
+    background: transparent; transition: background .22s; border-radius: 0 0 18px 18px;
+  }
+  .hor-day-card:hover { transform: translateY(-4px); border-color: rgba(255,107,0,.25); }
+  .hor-day-card.avail {
+    border-color: rgba(46,204,113,.3);
+    background: linear-gradient(145deg, #141f18, #111);
+  }
+  .hor-day-card.avail::after { background: linear-gradient(90deg, #27ae60, #2ecc71); }
+  .hor-day-card.weekend {
+    border-color: rgba(52,152,219,.2);
+    background: linear-gradient(145deg, #131a22, #111);
+  }
+  .hor-day-card.weekend.avail { border-color: rgba(52,152,219,.4); }
+  .hor-day-card.weekend.avail::after { background: linear-gradient(90deg, #1565c0, #3498db); }
+  .hor-day-card.unavail { opacity: .5; }
+  .hor-day-card.unavail:hover { opacity: .75; transform: none; }
+
+  /* Letra del día */
+  .hor-day-letter {
+    width: 44px; height: 44px; border-radius: 14px; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1rem; font-weight: 900; transition: all .22s;
+    background: rgba(255,255,255,.06); color: rgba(255,255,255,.4);
+    border: 1px solid rgba(255,255,255,.08);
+  }
+  .hor-day-card.avail:not(.weekend) .hor-day-letter {
+    background: rgba(46,204,113,.15); color: #2ecc71;
+    border-color: rgba(46,204,113,.3);
+  }
+  .hor-day-card.weekend .hor-day-letter {
+    background: rgba(52,152,219,.12); color: #3498db;
+    border-color: rgba(52,152,219,.25);
+  }
+
+  /* Nombre del día */
+  .hor-day-name { font-size: .76rem; font-weight: 700; color: rgba(255,255,255,.4); text-align: center; text-transform: uppercase; letter-spacing: .05em; }
+  .hor-day-card.avail .hor-day-name { color: rgba(255,255,255,.75); }
+
+  /* Toggle visual */
+  .hor-day-toggle-wrap { display: flex; flex-direction: column; align-items: center; gap: .4rem; margin-top: auto; }
+  .hor-toggle-label { font-size: .68rem; font-weight: 700; color: rgba(255,255,255,.25); text-transform: uppercase; letter-spacing: .04em; }
+  .hor-day-card.avail .hor-toggle-label { color: #2ecc71; }
+  .hor-day-card.weekend.avail .hor-toggle-label { color: #3498db; }
+
+  /* Checkbox oculto */
+  .hor-day-cb { display: none; }
+
+  /* Toggle pill visual */
+  .hor-toggle-pill {
+    width: 44px; height: 24px; border-radius: 99px;
+    background: rgba(255,255,255,.1); position: relative; transition: background .22s;
+    border: 1px solid rgba(255,255,255,.1);
+  }
+  .hor-toggle-pill::before {
+    content: ''; position: absolute; width: 18px; height: 18px;
+    border-radius: 50%; background: rgba(255,255,255,.4);
+    top: 2px; left: 2px; transition: transform .22s, background .22s;
+  }
+  .hor-day-card.avail:not(.weekend) .hor-toggle-pill { background: rgba(46,204,113,.3); border-color: rgba(46,204,113,.4); }
+  .hor-day-card.avail:not(.weekend) .hor-toggle-pill::before { transform: translateX(20px); background: #2ecc71; }
+  .hor-day-card.weekend.avail .hor-toggle-pill { background: rgba(52,152,219,.3); border-color: rgba(52,152,219,.4); }
+  .hor-day-card.weekend.avail .hor-toggle-pill::before { transform: translateX(20px); background: #3498db; }
+
+  /* Badge trabajos asignados */
+  .hor-day-badge {
+    font-size: .65rem; font-weight: 800; padding: .18rem .5rem;
+    border-radius: 99px; white-space: nowrap;
+    background: rgba(255,107,0,.15); border: 1px solid rgba(255,107,0,.3);
+    color: #FF6B00; display: none;
+  }
+  .hor-day-card.has-work .hor-day-badge { display: inline-block; }
+
+  /* ── RESUMEN SEMANAL ── */
+  .hor-summary {
+    background: linear-gradient(145deg,#181818,#141414);
+    border: 1px solid rgba(255,255,255,.07); border-radius: 16px;
+    padding: 1.2rem 1.5rem; margin-bottom: 2rem;
+    display: flex; align-items: center; gap: 2rem; flex-wrap: wrap;
+  }
+  .hor-sum-item { text-align: center; }
+  .hor-sum-val { font-size: 1.6rem; font-weight: 900; line-height: 1; }
+  .hor-sum-lbl { font-size: .68rem; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: rgba(255,255,255,.3); margin-top: .2rem; }
+  .hor-sum-divider { width: 1px; height: 40px; background: rgba(255,255,255,.07); }
+
+  /* ── GUARDAR ── */
+  .hor-save-row { display: flex; justify-content: flex-end; gap: 1rem; }
+  .hor-btn-save {
+    background: linear-gradient(135deg,#e05500,#FF6B00); color: #fff; border: none;
+    padding: .8rem 2.2rem; border-radius: 14px;
+    font-size: .92rem; font-weight: 800; cursor: pointer;
+    display: flex; align-items: center; gap: .55rem;
+    transition: opacity .18s, transform .18s; box-shadow: 0 6px 20px rgba(255,107,0,.3);
+  }
+  .hor-btn-save:hover { opacity: .9; transform: translateY(-2px); }
+
+  @media(max-width:700px){
+    .hor-week-grid { grid-template-columns: repeat(4,1fr); }
+  }
+  @media(max-width:480px){
+    .hor-week-grid { grid-template-columns: repeat(3,1fr); }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="hor-hero">
+  <div class="hor-hero-icon"><i class="fa fa-calendar-check"></i></div>
+  <div>
+    <div class="hor-hero-title">Mi Horario de Disponibilidad</div>
+    <div class="hor-hero-sub">Activa los días en que estás disponible para recibir trabajos.<br>El administrador verá esta configuración al asignarte reportes.</div>
+  </div>
+</div>
+
+{# Contar días activos #}
+{% set dias_activos = namespace(count=0) %}
+{% for i in range(7) %}
+  {% set r = rows.get(i) %}
+  {% if r and r.disponible %}{% set dias_activos.count = dias_activos.count + 1 %}{% endif %}
+{% endfor %}
+
+<!-- Resumen -->
+<div class="hor-summary">
+  <div class="hor-sum-item">
+    <div class="hor-sum-val" style="color:#2ecc71;">{{ dias_activos.count }}</div>
+    <div class="hor-sum-lbl">Días activos</div>
+  </div>
+  <div class="hor-sum-divider"></div>
+  <div class="hor-sum-item">
+    <div class="hor-sum-val" style="color:rgba(255,255,255,.5);">{{ 7 - dias_activos.count }}</div>
+    <div class="hor-sum-lbl">Días libres</div>
+  </div>
+  <div class="hor-sum-divider"></div>
+  <div class="hor-sum-item" style="flex:1;">
+    <div style="font-size:.83rem;color:rgba(255,255,255,.45);line-height:1.6;">
+      <i class="fa fa-circle-info" style="color:#FF6B00;margin-right:.4rem;"></i>
+      Haz click en un día para activarlo o desactivarlo. Los cambios se guardan al presionar <strong style="color:#fff;">Guardar</strong>.
+    </div>
+  </div>
+</div>
+
+<!-- Leyenda -->
+<div class="hor-legend">
+  <div class="hor-legend-item"><div class="hor-legend-dot" style="background:#2ecc71;box-shadow:0 0 6px #2ecc71;"></div> Disponible (L-V)</div>
+  <div class="hor-legend-item"><div class="hor-legend-dot" style="background:#3498db;box-shadow:0 0 6px #3498db;"></div> Disponible (fin de semana)</div>
+  <div class="hor-legend-item"><div class="hor-legend-dot" style="background:rgba(255,255,255,.2);"></div> No disponible</div>
+  <div class="hor-legend-item"><div class="hor-legend-dot" style="background:#FF6B00;box-shadow:0 0 6px rgba(255,107,0,.6);"></div> Con trabajo asignado</div>
+</div>
+
+<form method="POST" id="horForm">
+  <!-- Grid de días -->
+  <div class="hor-week-grid" id="weekGrid">
+    {% set letras = ['L','M','X','J','V','S','D'] %}
+    {% set nombres = ['Lunes','Martes','Miérc.','Jueves','Viernes','Sábado','Domingo'] %}
+    {% for i in range(7) %}
+      {% set r = rows.get(i) %}
+      {% set disp = r.disponible if r else True %}
+      {% set es_weekend = i >= 5 %}
+      {% set trabajos_dia = trabajos_por_dia.get(i, []) if trabajos_por_dia is defined else [] %}
+      <div class="hor-day-card {% if disp %}avail{% else %}unavail{% endif %} {% if es_weekend %}weekend{% endif %} {% if trabajos_dia %}has-work{% endif %}"
+           id="card_{{ i }}" onclick="toggleDay({{ i }})">
+        <div class="hor-day-letter">{{ letras[i] }}</div>
+        <div class="hor-day-name">{{ nombres[i] }}</div>
+        <div class="hor-day-toggle-wrap">
+          <div class="hor-toggle-pill" id="pill_{{ i }}"></div>
+          <div class="hor-toggle-label" id="lbl_{{ i }}">{% if disp %}Activo{% else %}Libre{% endif %}</div>
+        </div>
+        {% if trabajos_dia %}
+        <div class="hor-day-badge">{{ trabajos_dia|length }} trabajo{{ 's' if trabajos_dia|length != 1 else '' }}</div>
+        {% endif %}
+        <input type="checkbox" class="hor-day-cb" name="disp_{{ i }}" id="cb_{{ i }}" {% if disp %}checked{% endif %}>
+      </div>
+    {% endfor %}
+  </div>
+
+  <div class="hor-save-row">
+    <button type="submit" class="hor-btn-save">
+      <i class="fa fa-floppy-disk"></i> Guardar horario
+    </button>
+  </div>
+</form>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function toggleDay(i) {
+  const card = document.getElementById('card_' + i);
+  const cb   = document.getElementById('cb_' + i);
+  const lbl  = document.getElementById('lbl_' + i);
+  const isWeekend = card.classList.contains('weekend');
+
+  const newVal = !cb.checked;
+  cb.checked = newVal;
+
+  if (newVal) {
+    card.classList.remove('unavail');
+    card.classList.add('avail');
+    lbl.textContent = 'Activo';
+  } else {
+    card.classList.remove('avail');
+    card.classList.add('unavail');
+    lbl.textContent = 'Libre';
+  }
+}
+
+// Flash message auto-dismiss
+document.addEventListener('DOMContentLoaded', () => {
+  const alerts = document.querySelectorAll('.flash-msg');
+  alerts.forEach(a => setTimeout(() => a.style.opacity = '0', 3000));
+});
+</script>
+{% endblock %}

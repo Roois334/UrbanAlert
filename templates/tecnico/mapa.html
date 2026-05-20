@@ -1,0 +1,116 @@
+{% extends 'tecnico/base_tecnico.html' %}
+{% block title %}Mapa de Reportes — Urban Alert Técnico{% endblock %}
+{% block head %}
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css"/>
+<link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css"/>
+<style>
+  .tc-content { padding: 0 !important; overflow: hidden; margin: 0 !important; }
+  .footer-premium { display: none !important; }
+  .tc-wrap { overflow: hidden; }
+  #mapa-reportes { width: 100%; height: calc(100vh - 68px); }
+  @keyframes pulse-ring { 0%{transform:scale(.8);opacity:.6;} 70%{transform:scale(2.5);opacity:0;} 100%{transform:scale(.8);opacity:0;} }
+  .mapa-panel {
+    position:absolute;top:1rem;left:1rem;z-index:1000;
+    background:rgba(10,10,10,.96);backdrop-filter:blur(20px);
+    border:1px solid rgba(255,107,0,.2);border-radius:16px;
+    padding:1rem 1.1rem;min-width:240px;
+    box-shadow:0 8px 40px rgba(0,0,0,.6);
+  }
+  .mp-title { font-size:.67rem;font-weight:800;color:rgba(255,107,0,.75);text-transform:uppercase;letter-spacing:.1em;margin-bottom:.7rem;font-family:'Plus Jakarta Sans',sans-serif;display:flex;align-items:center;gap:.4rem; }
+  .mapa-select { width:100%;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:9px;padding:.45rem .75rem;color:#fff;font-size:.82rem;outline:none;cursor:pointer;font-family:'Inter',sans-serif;transition:border-color .2s;-webkit-appearance:none;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 10'%3E%3Cpath fill='%23777' d='M0 0l8 10 8-10z'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right .75rem center;background-size:10px;padding-right:2rem; }
+  .mapa-select option { background:#1a1a1a; }
+  .mapa-select:focus { border-color:rgba(255,107,0,.5); }
+  .divider { height:1px;background:rgba(255,255,255,.07);margin:.7rem 0; }
+  .estado-filters { display:flex;flex-direction:column;gap:.32rem; }
+  .estado-btn { display:flex;align-items:center;gap:.5rem;padding:.35rem .65rem;border-radius:9px;cursor:pointer;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.07);transition:all .18s;font-size:.78rem;color:rgba(255,255,255,.6);font-family:'Inter',sans-serif;user-select:none; }
+  .estado-btn:hover { background:rgba(255,255,255,.08); }
+  .estado-btn.active { border-color:var(--dc);background:color-mix(in srgb,var(--dc) 12%,transparent);color:#fff; }
+  .estado-btn .dot { width:10px;height:10px;border-radius:50%;background:var(--dc);box-shadow:0 0 7px var(--dc);flex-shrink:0; }
+  .estado-btn .cnt { margin-left:auto;font-size:.72rem;font-weight:700;color:var(--dc); }
+  .mapa-count { font-size:.78rem;color:rgba(255,255,255,.38);display:flex;justify-content:space-between; }
+  .mapa-count strong { color:#ff6b00;font-weight:800;font-size:.9rem; }
+  .btn-fit { position:absolute;bottom:1.5rem;right:1rem;z-index:1000;width:40px;height:40px;border-radius:10px;background:rgba(10,10,10,.95);border:1px solid rgba(255,255,255,.1);color:rgba(255,255,255,.55);font-size:1rem;display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 4px 20px rgba(0,0,0,.4);transition:all .2s; }
+  .btn-fit:hover { border-color:#ff6b00;color:#ff6b00; }
+  .leaflet-popup-content-wrapper { background:#111 !important;border:1px solid rgba(255,107,0,.25) !important;border-radius:14px !important;box-shadow:0 16px 48px rgba(0,0,0,.75) !important;padding:0 !important; }
+  .leaflet-popup-tip { background:#111 !important; }
+  .leaflet-popup-content { color:#fff !important;margin:0 !important; }
+  .leaflet-popup-close-button { color:rgba(255,255,255,.4) !important;top:10px !important;right:12px !important; }
+  .ua-popup { min-width:225px;padding:1rem 1.1rem;font-family:'Inter',sans-serif; }
+  .ua-badge { display:inline-flex;align-items:center;gap:.3rem;font-size:.67rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em;padding:.2rem .5rem;border-radius:20px;margin-bottom:.5rem; }
+  .ua-ptitle { font-weight:700;font-size:.92rem;color:#fff;margin-bottom:.22rem;font-family:'Plus Jakarta Sans',sans-serif; }
+  .ua-meta { font-size:.73rem;color:rgba(255,255,255,.38);margin-bottom:.75rem; }
+  .ua-btn { display:block;text-align:center;padding:.42rem .75rem;background:linear-gradient(135deg,#ff6b00,#e05500);color:#fff !important;border-radius:9px;font-size:.77rem;font-weight:700;text-decoration:none;transition:opacity .18s;font-family:'Plus Jakarta Sans',sans-serif; }
+  .ua-btn:hover { opacity:.85; }
+  .marker-cluster-small,.marker-cluster-medium,.marker-cluster-large { background-color:rgba(255,107,0,.15) !important; }
+  .marker-cluster-small div,.marker-cluster-medium div,.marker-cluster-large div { background-color:rgba(255,107,0,.75) !important;color:#fff !important;font-weight:800 !important;font-family:'Plus Jakarta Sans',sans-serif !important; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div style="position:relative;">
+  <div id="mapa-reportes"></div>
+
+  <div class="mapa-panel">
+    <div class="mp-title"><i class="fa fa-wrench"></i> Mis asignaciones</div>
+    <form method="GET" id="fForm">
+      <select name="ciudad" class="mapa-select" onchange="document.getElementById('fForm').submit()">
+        <option value="">📍 Todas las ciudades</option>
+        <option {% if request.args.get('ciudad') == 'Facatativá' %}selected{% endif %} value="Facatativá">Facatativá</option>
+        <option {% if request.args.get('ciudad') == 'Madrid' %}selected{% endif %} value="Madrid">Madrid</option>
+        <option {% if request.args.get('ciudad') == 'Mosquera' %}selected{% endif %} value="Mosquera">Mosquera</option>
+      </select>
+    </form>
+    <div class="divider"></div>
+    <div class="mp-title" style="margin-bottom:.45rem;"><i class="fa fa-circle-dot"></i> Estado</div>
+    <div class="estado-filters">
+      <div class="estado-btn active" data-est="pendiente"   style="--dc:#f39c12;"><span class="dot"></span>Pendiente   <span class="cnt" id="c-pendiente">0</span></div>
+      <div class="estado-btn active" data-est="en_revision" style="--dc:#9b59b6;"><span class="dot"></span>En revisi&oacute;n <span class="cnt" id="c-en_revision">0</span></div>
+      <div class="estado-btn active" data-est="aprobado"    style="--dc:#ff6b00;"><span class="dot"></span>Aprobado    <span class="cnt" id="c-aprobado">0</span></div>
+      <div class="estado-btn active" data-est="asignado"    style="--dc:#1abc9c;"><span class="dot"></span>Asignado    <span class="cnt" id="c-asignado">0</span></div>
+      <div class="estado-btn active" data-est="en_progreso" style="--dc:#3498db;"><span class="dot"></span>En progreso <span class="cnt" id="c-en_progreso">0</span></div>
+      <div class="estado-btn active" data-est="resuelto"    style="--dc:#2ecc71;"><span class="dot"></span>Resuelto    <span class="cnt" id="c-resuelto">0</span></div>
+      <div class="estado-btn active" data-est="rechazado"   style="--dc:#e74c3c;"><span class="dot"></span>Rechazado   <span class="cnt" id="c-rechazado">0</span></div>
+      <div class="estado-btn active" data-est="duplicado"   style="--dc:#7f8c8d;"><span class="dot"></span>Duplicado   <span class="cnt" id="c-duplicado">0</span></div>
+    </div>
+    <div class="divider"></div>
+    <div class="mapa-count"><span>Visibles</span><strong id="visCount">0</strong></div>
+  </div>
+
+  <button class="btn-fit" id="btnFit" title="Ajustar vista"><i class="fa fa-expand"></i></button>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
+<script>
+const EC={pendiente:{color:'#f39c12',glow:'rgba(243,156,18,.5)',label:'Pendiente',icon:'⏳'},en_revision:{color:'#9b59b6',glow:'rgba(155,89,182,.5)',label:'En revisión',icon:'🔍'},aprobado:{color:'#ff6b00',glow:'rgba(255,107,0,.5)',label:'Aprobado',icon:'⚡'},asignado:{color:'#1abc9c',glow:'rgba(26,188,156,.5)',label:'Asignado',icon:'👷'},en_progreso:{color:'#3498db',glow:'rgba(52,152,219,.5)',label:'En progreso',icon:'🔧'},resuelto:{color:'#2ecc71',glow:'rgba(46,204,113,.5)',label:'Resuelto',icon:'✅'},rechazado:{color:'#e74c3c',glow:'rgba(231,76,60,.5)',label:'Rechazado',icon:'❌'},duplicado:{color:'#7f8c8d',glow:'rgba(127,140,141,.5)',label:'Duplicado',icon:'📋'}};
+const map=L.map('mapa-reportes',{zoomControl:false}).setView([4.814,-74.357],11);
+L.control.zoom({position:'bottomright'}).addTo(map);
+const tileDark=L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_matter/{z}/{x}/{y}.png',{attribution:'&copy; OpenStreetMap &copy; CARTO',subdomains:'abcd',maxZoom:20,crossOrigin:true});
+const tileOSM=L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'&copy; OpenStreetMap',subdomains:'abc',maxZoom:19});
+tileOSM.addTo(map);
+L.control.layers({'🗺️ Claro':tileOSM,'🌑 Oscuro':tileDark},{},{position:'bottomright'}).addTo(map);
+const reportes={{ reportes|tojson|safe }};
+const groups={},counts={},activeE=new Set(Object.keys(EC));
+Object.keys(EC).forEach(est=>{counts[est]=0;groups[est]=L.markerClusterGroup({maxClusterRadius:50,iconCreateFunction:cluster=>{const c=EC[est].color;return L.divIcon({html:`<div style="background:${c};color:#fff;font-weight:800;font-size:.8rem;width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;border:2px solid rgba(255,255,255,.4);box-shadow:0 0 16px ${EC[est].glow};font-family:'Plus Jakarta Sans',sans-serif;">${cluster.getChildCount()}</div>`,className:'',iconSize:[36,36]});}});});
+reportes.forEach(r=>{
+  if(!r.latitud||!r.longitud)return;
+  const est=r.estado||'pendiente',cfg=EC[est]||EC.pendiente;
+  counts[est]=(counts[est]||0)+1;
+  const icon=L.divIcon({html:`<div style="position:relative;width:24px;height:24px;"><div style="position:absolute;inset:-5px;border-radius:50%;background:${cfg.color};opacity:.2;animation:pulse-ring 2s ease-out infinite;"></div><div style="width:24px;height:24px;border-radius:50%;background:${cfg.color};border:2.5px solid rgba(255,255,255,.9);box-shadow:0 0 14px ${cfg.glow},0 2px 8px rgba(0,0,0,.55);position:relative;z-index:1;"></div></div>`,className:'',iconSize:[24,24],iconAnchor:[12,12],popupAnchor:[0,-14]});
+  const m=L.marker([r.latitud,r.longitud],{icon});
+  m.bindPopup(`<div class="ua-popup"><div class="ua-badge" style="background:${cfg.color}20;color:${cfg.color};border:1px solid ${cfg.color}40;">${cfg.icon} ${cfg.label}</div><div class="ua-ptitle">${r.titulo||'Sin título'}</div><div class="ua-meta"><i class="fa fa-location-dot" style="color:#ff6b00;margin-right:.3rem;"></i>${r.ciudad||'—'}</div><a href="/reportes/${r.id}" class="ua-btn">Ver detalle →</a></div>`,{maxWidth:280});
+  groups[est].addLayer(m);
+});
+Object.values(groups).forEach(g=>map.addLayer(g));
+Object.entries(counts).forEach(([est,n])=>{const el=document.getElementById('c-'+est);if(el)el.textContent=n;});
+updateVis();
+function updateVis(){let n=0;activeE.forEach(e=>{n+=(counts[e]||0);});document.getElementById('visCount').textContent=n;}
+document.querySelectorAll('.estado-btn').forEach(btn=>{btn.addEventListener('click',()=>{const est=btn.dataset.est;btn.classList.toggle('active');if(btn.classList.contains('active')){activeE.add(est);map.addLayer(groups[est]);}else{activeE.delete(est);map.removeLayer(groups[est]);}updateVis();});});
+document.getElementById('btnFit').addEventListener('click',()=>{const pts=reportes.filter(r=>r.latitud&&r.longitud).map(r=>[r.latitud,r.longitud]);if(pts.length>1)map.fitBounds(pts,{padding:[70,70]});else if(pts.length===1)map.setView(pts[0],14);});
+const pts=reportes.filter(r=>r.latitud&&r.longitud).map(r=>[r.latitud,r.longitud]);
+if(pts.length>1)setTimeout(()=>map.fitBounds(pts,{padding:[80,80]}),300);
+</script>
+{% endblock %}

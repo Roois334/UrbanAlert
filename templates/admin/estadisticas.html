@@ -1,0 +1,367 @@
+{% extends 'admin/base_admin.html' %}
+{% block title %}Estadísticas — Urban Alert{% endblock %}
+{% block head %}
+<style>
+  .stats-wrap { padding: 1.5rem 2rem; }
+  .stats-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:1.75rem; flex-wrap:wrap; gap:1rem; }
+  .stats-header h1 { font-size:1.4rem; font-weight:800; color:#fff; margin:0; }
+  .stats-subtitle { font-size:.83rem; color:rgba(255,255,255,.4); margin-top:.2rem; }
+
+  /* KPI grid */
+  .kpi-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:1rem; margin-bottom:1.5rem; }
+  .kpi-card {
+    background:#161616; border:1px solid rgba(255,255,255,.07); border-radius:16px;
+    padding:1.25rem 1.4rem; position:relative; overflow:hidden;
+    transition:transform .18s, border-color .18s;
+  }
+  .kpi-card:hover { transform:translateY(-2px); border-color:rgba(255,107,0,.2); }
+  .kpi-card::before { content:''; position:absolute; inset:0; opacity:0; transition:opacity .2s; }
+  .kpi-orange::before { background:radial-gradient(circle at top left, rgba(255,107,0,.08), transparent 60%); opacity:1; }
+  .kpi-green::before  { background:radial-gradient(circle at top left, rgba(46,204,113,.08), transparent 60%); opacity:1; }
+  .kpi-blue::before   { background:radial-gradient(circle at top left, rgba(52,152,219,.08), transparent 60%); opacity:1; }
+  .kpi-purple::before { background:radial-gradient(circle at top left, rgba(155,89,182,.08), transparent 60%); opacity:1; }
+  .kpi-icon { width:42px; height:42px; border-radius:12px; display:flex; align-items:center; justify-content:center; font-size:1rem; margin-bottom:1rem; }
+  .kpi-icon-orange { background:rgba(255,107,0,.15); color:var(--naranja); }
+  .kpi-icon-green  { background:rgba(46,204,113,.15); color:#2ecc71; }
+  .kpi-icon-blue   { background:rgba(52,152,219,.15); color:#3498db; }
+  .kpi-icon-purple { background:rgba(155,89,182,.15); color:#9b59b6; }
+  .kpi-icon-yellow { background:rgba(241,196,15,.15); color:#f1c40f; }
+  .kpi-icon-red    { background:rgba(231,76,60,.15); color:#e74c3c; }
+  .kpi-value { font-size:2.2rem; font-weight:900; color:#fff; line-height:1; margin-bottom:.3rem; letter-spacing:-.03em; }
+  .kpi-label { font-size:.75rem; color:rgba(255,255,255,.4); font-weight:600; text-transform:uppercase; letter-spacing:.06em; }
+  .kpi-change { font-size:.75rem; margin-top:.5rem; font-weight:600; }
+  .change-up { color:#2ecc71; }
+  .change-neutral { color:rgba(255,255,255,.3); }
+
+  /* Charts grid */
+  .charts-row { display:grid; gap:1rem; margin-bottom:1rem; }
+  .charts-2col { grid-template-columns: 2fr 1fr; }
+  .charts-3col { grid-template-columns: 1fr 1fr 1fr; }
+  .charts-equal { grid-template-columns: 1fr 1fr; }
+
+  .chart-card {
+    background:#161616; border:1px solid rgba(255,255,255,.07); border-radius:16px;
+    padding:1.4rem; position:relative;
+  }
+  .chart-title { font-size:.95rem; font-weight:800; color:#fff; margin-bottom:.3rem; }
+  .chart-subtitle { font-size:.75rem; color:rgba(255,255,255,.35); margin-bottom:1.25rem; }
+  .chart-container { position:relative; }
+
+  /* Tabla top técnicos */
+  .tecnico-row { display:flex; align-items:center; gap:.85rem; padding:.65rem 0; border-bottom:1px solid rgba(255,255,255,.04); }
+  .tecnico-row:last-child { border-bottom:none; }
+  .tecnico-rank { width:24px; height:24px; border-radius:8px; background:rgba(255,255,255,.06); display:flex; align-items:center; justify-content:center; font-size:.72rem; font-weight:800; color:rgba(255,255,255,.4); flex-shrink:0; }
+  .tecnico-rank.gold { background:rgba(241,196,15,.15); color:#f1c40f; }
+  .tecnico-rank.silver { background:rgba(189,195,199,.15); color:#bdc3c7; }
+  .tecnico-rank.bronze { background:rgba(185,127,68,.15); color:#b97f44; }
+  .tecnico-avatar { width:32px; height:32px; border-radius:50%; background:var(--naranja); display:flex; align-items:center; justify-content:center; font-size:.8rem; font-weight:800; color:#fff; flex-shrink:0; }
+  .tecnico-name { font-weight:600; font-size:.85rem; color:#fff; }
+  .tecnico-stats { font-size:.75rem; color:rgba(255,255,255,.4); margin-top:.1rem; }
+  .tecnico-bar-wrap { flex:1; }
+  .tecnico-bar { height:5px; background:rgba(255,255,255,.07); border-radius:99px; overflow:hidden; }
+  .tecnico-bar-fill { height:100%; border-radius:99px; background:linear-gradient(90deg, var(--naranja), #e05500); transition:width .6s ease; }
+  .tecnico-pct { font-size:.72rem; font-weight:700; color:var(--naranja); white-space:nowrap; }
+
+  /* Ciudad pills */
+  .ciudad-stat { display:flex; align-items:center; gap:.75rem; padding:.65rem 0; border-bottom:1px solid rgba(255,255,255,.04); }
+  .ciudad-stat:last-child { border-bottom:none; }
+  .ciudad-name { font-weight:700; font-size:.88rem; color:#fff; width:90px; flex-shrink:0; }
+  .ciudad-bar-wrap { flex:1; }
+  .ciudad-bar { height:8px; background:rgba(255,255,255,.06); border-radius:99px; overflow:hidden; }
+  .ciudad-bar-fill { height:100%; border-radius:99px; }
+  .ciudad-nums { font-size:.75rem; color:rgba(255,255,255,.4); white-space:nowrap; text-align:right; min-width:70px; }
+
+  @media(max-width:1100px) { .kpi-grid { grid-template-columns:repeat(2,1fr); } .charts-2col,.charts-3col { grid-template-columns:1fr; } }
+  @media(max-width:640px) { .kpi-grid { grid-template-columns:1fr 1fr; } .charts-equal { grid-template-columns:1fr; } }
+</style>
+{% endblock %}
+{% block content %}
+<div class="stats-wrap">
+  <div class="stats-header">
+    <div>
+      <h1><i class="fa fa-chart-bar" style="color:var(--naranja);margin-right:.5rem;"></i>Estadísticas</h1>
+      <div class="stats-subtitle">Panel de análisis y métricas de la plataforma</div>
+    </div>
+    <div style="font-size:.8rem;color:rgba(255,255,255,.3);display:flex;align-items:center;gap:.4rem;">
+      <i class="fa fa-circle" style="color:#2ecc71;font-size:.5rem;"></i> Datos en tiempo real
+    </div>
+  </div>
+
+  <!-- KPIs -->
+  <div class="kpi-grid">
+    <div class="kpi-card kpi-orange">
+      <div class="kpi-icon kpi-icon-orange"><i class="fa fa-flag"></i></div>
+      <div class="kpi-value">{{ kpis.total or 0 }}</div>
+      <div class="kpi-label">Total Reportes</div>
+      <div class="kpi-change change-neutral"><i class="fa fa-users" style="margin-right:.3rem;"></i>{{ total_usuarios }} usuarios activos</div>
+    </div>
+    <div class="kpi-card kpi-green">
+      <div class="kpi-icon kpi-icon-green"><i class="fa fa-circle-check"></i></div>
+      <div class="kpi-value" style="color:#2ecc71;">{{ kpis.resueltos or 0 }}</div>
+      <div class="kpi-label">Resueltos</div>
+      <div class="kpi-change change-up">
+        {% if kpis.total %}
+        <i class="fa fa-percent" style="margin-right:.3rem;"></i>{{ ((kpis.resueltos or 0) / kpis.total * 100)|round(1) }}% tasa de resolución
+        {% endif %}
+      </div>
+    </div>
+    <div class="kpi-card kpi-blue">
+      <div class="kpi-icon kpi-icon-blue"><i class="fa fa-clock"></i></div>
+      <div class="kpi-value" style="color:#3498db;">{{ tiempo_promedio }}</div>
+      <div class="kpi-label">Horas Promedio Resolución</div>
+      <div class="kpi-change change-neutral"><i class="fa fa-calendar-week" style="margin-right:.3rem;"></i>{{ usuarios_nuevos }} usuarios nuevos esta semana</div>
+    </div>
+    <div class="kpi-card kpi-purple">
+      <div class="kpi-icon kpi-icon-yellow"><i class="fa fa-triangle-exclamation"></i></div>
+      <div class="kpi-value" style="color:#f1c40f;">{{ kpis.pendientes or 0 }}</div>
+      <div class="kpi-label">Pendientes</div>
+      <div class="kpi-change" style="color:rgba(255,255,255,.3);">
+        <i class="fa fa-spinner" style="margin-right:.3rem;color:var(--naranja);"></i>{{ kpis.en_progreso or 0 }} en progreso
+      </div>
+    </div>
+  </div>
+
+  <!-- Tendencia + Donut estado -->
+  <div class="charts-row charts-2col">
+    <div class="chart-card">
+      <div class="chart-title">Tendencia de Reportes</div>
+      <div class="chart-subtitle">Últimos 30 días</div>
+      <div class="chart-container" style="height:220px;">
+        <canvas id="chartTendencia"></canvas>
+      </div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-title">Distribución por Estado</div>
+      <div class="chart-subtitle">Todos los reportes</div>
+      <div class="chart-container" style="height:220px;">
+        <canvas id="chartEstado"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <!-- Categorías + Prioridad -->
+  <div class="charts-row charts-equal">
+    <div class="chart-card">
+      <div class="chart-title">Reportes por Categoría</div>
+      <div class="chart-subtitle">Top categorías más reportadas</div>
+      <div class="chart-container" style="height:240px;">
+        <canvas id="chartCategoria"></canvas>
+      </div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-title">Reportes por Prioridad</div>
+      <div class="chart-subtitle">Distribución de urgencia</div>
+      <div class="chart-container" style="height:240px;">
+        <canvas id="chartPrioridad"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <!-- Ciudad + Top Técnicos -->
+  <div class="charts-row charts-equal">
+    <div class="chart-card">
+      <div class="chart-title">Reportes por Ciudad</div>
+      <div class="chart-subtitle">Cobertura territorial</div>
+      {% set max_ciudad = por_ciudad[0].total if por_ciudad else 1 %}
+      {% for c in por_ciudad %}
+      <div class="ciudad-stat">
+        <div class="ciudad-name">{{ c.ciudad }}</div>
+        <div class="ciudad-bar-wrap">
+          <div class="ciudad-bar">
+            <div class="ciudad-bar-fill" style="width:{{ (c.total / max_ciudad * 100)|round(0)|int }}%;background:{% if loop.index==1 %}#FF6B00{% elif loop.index==2 %}#3498db{% else %}#9b59b6{% endif %};"></div>
+          </div>
+        </div>
+        <div class="ciudad-nums">
+          <span style="color:#fff;font-weight:700;">{{ c.total }}</span>
+          <span style="margin-left:.4rem;color:#2ecc71;">✓{{ c.resueltos or 0 }}</span>
+        </div>
+      </div>
+      {% endfor %}
+      <div style="margin-top:1.25rem;">
+        <div class="chart-container" style="height:160px;">
+          <canvas id="chartCiudad"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <div class="chart-card">
+      <div class="chart-title">Top Técnicos</div>
+      <div class="chart-subtitle">Ranking por reportes resueltos</div>
+      {% if top_tecnicos %}
+        {% for t in top_tecnicos %}
+        {% set pct = ((t.resueltos or 0) / t.total_asignados * 100)|round(0)|int if t.total_asignados else 0 %}
+        <div class="tecnico-row">
+          <div class="tecnico-rank {% if loop.index==1 %}gold{% elif loop.index==2 %}silver{% elif loop.index==3 %}bronze{% endif %}">{{ loop.index }}</div>
+          <div class="tecnico-avatar">{{ t.nombre[0]|upper }}</div>
+          <div style="flex:1;min-width:0;">
+            <div class="tecnico-name">{{ t.nombre }} {{ t.apellido or '' }}</div>
+            <div class="tecnico-stats">{{ t.resueltos or 0 }} resueltos de {{ t.total_asignados }}</div>
+            <div class="tecnico-bar">
+              <div class="tecnico-bar-fill" style="width:{{ pct }}%;"></div>
+            </div>
+          </div>
+          <div class="tecnico-pct">{{ pct }}%</div>
+        </div>
+        {% endfor %}
+      {% else %}
+        <div style="text-align:center;padding:2rem;color:rgba(255,255,255,.25);">
+          <i class="fa fa-wrench" style="font-size:2rem;display:block;margin-bottom:.75rem;opacity:.3;"></i>
+          Sin datos de técnicos aún
+        </div>
+      {% endif %}
+    </div>
+  </div>
+
+</div>
+{% endblock %}
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script>
+Chart.defaults.color = 'rgba(255,255,255,0.45)';
+Chart.defaults.borderColor = 'rgba(255,255,255,0.06)';
+Chart.defaults.font.family = "'Inter','Segoe UI',sans-serif";
+
+const ORANGE  = '#FF6B00';
+const BLUE    = '#3498db';
+const GREEN   = '#2ecc71';
+const PURPLE  = '#9b59b6';
+const YELLOW  = '#f1c40f';
+const RED     = '#e74c3c';
+const TEAL    = '#1abc9c';
+const PINK    = '#e91e8c';
+
+// ── Tendencia (line chart) ──
+const tendenciaData = {{ tendencia | tojson | safe }};
+const tendFechas = tendenciaData.map(d => {
+  const f = new Date(d.fecha); return f.toLocaleDateString('es-CO', {day:'numeric',month:'short'});
+});
+const tendTotales = tendenciaData.map(d => d.total);
+
+new Chart(document.getElementById('chartTendencia'), {
+  type: 'line',
+  data: {
+    labels: tendFechas.length ? tendFechas : ['Sin datos'],
+    datasets: [{
+      label: 'Reportes',
+      data: tendTotales.length ? tendTotales : [0],
+      borderColor: ORANGE,
+      backgroundColor: 'rgba(255,107,0,0.08)',
+      borderWidth: 2.5,
+      pointBackgroundColor: ORANGE,
+      pointRadius: 3,
+      pointHoverRadius: 6,
+      fill: true,
+      tension: 0.4
+    }]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    plugins: { legend: { display: false }, tooltip: { backgroundColor:'#1c1c1c', borderColor:'rgba(255,255,255,.1)', borderWidth:1, padding:10, titleColor:'#fff', bodyColor:'rgba(255,255,255,.6)' }},
+    scales: {
+      x: { grid: { display: false }, ticks: { maxTicksLimit: 8, font:{size:11} }},
+      y: { grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { stepSize: 1, font:{size:11} }, beginAtZero: true }
+    }
+  }
+});
+
+// ── Estado (doughnut) ──
+const estadoData = {{ por_estado | tojson | safe }};
+const estadoColors = { pendiente:'#f1c40f', aprobado: BLUE, asignado: PURPLE, en_progreso: ORANGE, resuelto: GREEN, rechazado: RED, en_revision: TEAL, duplicado:'#95a5a6' };
+new Chart(document.getElementById('chartEstado'), {
+  type: 'doughnut',
+  data: {
+    labels: estadoData.map(d => d.estado.replace('_',' ')),
+    datasets: [{
+      data: estadoData.map(d => d.total),
+      backgroundColor: estadoData.map(d => estadoColors[d.estado] || '#888'),
+      borderColor: '#161616',
+      borderWidth: 3,
+      hoverOffset: 6
+    }]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    cutout: '68%',
+    plugins: {
+      legend: { position: 'bottom', labels: { padding:12, usePointStyle:true, pointStyleWidth:8, font:{size:11} }},
+      tooltip: { backgroundColor:'#1c1c1c', borderColor:'rgba(255,255,255,.1)', borderWidth:1, padding:10 }
+    }
+  }
+});
+
+// ── Categorías (bar horizontal) ──
+const catData = {{ por_categoria | tojson | safe }};
+new Chart(document.getElementById('chartCategoria'), {
+  type: 'bar',
+  data: {
+    labels: catData.map(d => d.categoria),
+    datasets: [{
+      label: 'Reportes',
+      data: catData.map(d => d.total),
+      backgroundColor: [ORANGE,BLUE,GREEN,PURPLE,YELLOW,TEAL,RED,PINK].map(c => c+'cc'),
+      borderColor:     [ORANGE,BLUE,GREEN,PURPLE,YELLOW,TEAL,RED,PINK],
+      borderWidth: 1.5,
+      borderRadius: 6,
+    }]
+  },
+  options: {
+    indexAxis: 'y',
+    responsive: true, maintainAspectRatio: false,
+    plugins: { legend: { display:false }, tooltip: { backgroundColor:'#1c1c1c', borderColor:'rgba(255,255,255,.1)', borderWidth:1, padding:10 }},
+    scales: {
+      x: { grid: { color:'rgba(255,255,255,.04)' }, ticks: { stepSize:1 }, beginAtZero: true },
+      y: { grid: { display:false }, ticks: { font:{size:11} }}
+    }
+  }
+});
+
+// ── Prioridad (polar area) ──
+const prioData = {{ por_prioridad | tojson | safe }};
+const prioColors = { critica: RED, alta: ORANGE, media: YELLOW, baja: GREEN };
+new Chart(document.getElementById('chartPrioridad'), {
+  type: 'polarArea',
+  data: {
+    labels: prioData.map(d => d.prioridad ? d.prioridad.charAt(0).toUpperCase()+d.prioridad.slice(1) : '?'),
+    datasets: [{
+      data: prioData.map(d => d.total),
+      backgroundColor: prioData.map(d => (prioColors[d.prioridad] || '#888')+'55'),
+      borderColor:     prioData.map(d => prioColors[d.prioridad] || '#888'),
+      borderWidth: 2
+    }]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    plugins: {
+      legend: { position:'bottom', labels: { padding:12, usePointStyle:true, pointStyleWidth:8, font:{size:11} }},
+      tooltip: { backgroundColor:'#1c1c1c', borderColor:'rgba(255,255,255,.1)', borderWidth:1, padding:10 }
+    },
+    scales: { r: { grid: { color:'rgba(255,255,255,.05)' }, ticks: { display:false }}}
+  }
+});
+
+// ── Ciudad (bar grouped) ──
+const ciudadData = {{ por_ciudad | tojson | safe }};
+new Chart(document.getElementById('chartCiudad'), {
+  type: 'bar',
+  data: {
+    labels: ciudadData.map(d => d.ciudad),
+    datasets: [
+      { label:'Total', data: ciudadData.map(d => d.total), backgroundColor: ORANGE+'99', borderColor: ORANGE, borderWidth:1.5, borderRadius:5 },
+      { label:'Resueltos', data: ciudadData.map(d => d.resueltos||0), backgroundColor: GREEN+'99', borderColor: GREEN, borderWidth:1.5, borderRadius:5 },
+      { label:'Pendientes', data: ciudadData.map(d => d.pendientes||0), backgroundColor: YELLOW+'99', borderColor: YELLOW, borderWidth:1.5, borderRadius:5 }
+    ]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    plugins: {
+      legend: { position:'bottom', labels:{ padding:10, usePointStyle:true, pointStyleWidth:8, font:{size:11} }},
+      tooltip: { backgroundColor:'#1c1c1c', borderColor:'rgba(255,255,255,.1)', borderWidth:1, padding:10 }
+    },
+    scales: {
+      x: { grid:{display:false} },
+      y: { grid:{color:'rgba(255,255,255,.04)'}, beginAtZero:true, ticks:{stepSize:1} }
+    }
+  }
+});
+</script>
+{% endblock %}

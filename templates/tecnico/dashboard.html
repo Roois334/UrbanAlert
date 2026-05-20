@@ -1,0 +1,630 @@
+{% extends 'tecnico/base_tecnico.html' %}
+{% block title %}Panel Técnico — Urban Alert{% endblock %}
+
+{% block content %}
+<style>
+  /* ── KPIs ── */
+  .tc-kpi-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:1rem; margin-bottom:1.75rem; }
+  .tc-kpi {
+    background:linear-gradient(145deg,#181818,#141414);
+    border:1px solid rgba(255,255,255,.08); border-radius:16px;
+    padding:1.4rem 1.5rem; position:relative; overflow:hidden;
+    transition:transform .2s, border-color .2s;
+  }
+  .tc-kpi:hover { transform:translateY(-3px); border-color:rgba(255,107,0,.3); }
+  .tc-kpi::before { content:''; position:absolute; top:0; left:0; right:0; height:3px; }
+  .tc-kpi.orange::before { background:linear-gradient(90deg,#FF6B00,#ff8c35); }
+  .tc-kpi.blue::before   { background:linear-gradient(90deg,#3498db,#1565c0); }
+  .tc-kpi.green::before  { background:linear-gradient(90deg,#2ecc71,#27ae60); }
+  .tc-kpi.purple::before { background:linear-gradient(90deg,#9b59b6,#6c3483); }
+  .tc-kpi-icon { width:42px;height:42px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:1.2rem;margin-bottom:.85rem; }
+  .tc-kpi.orange .tc-kpi-icon { background:rgba(255,107,0,.12);  color:#FF6B00; }
+  .tc-kpi.blue   .tc-kpi-icon { background:rgba(52,152,219,.12); color:#3498db; }
+  .tc-kpi.green  .tc-kpi-icon { background:rgba(46,204,113,.12); color:#2ecc71; }
+  .tc-kpi.purple .tc-kpi-icon { background:rgba(155,89,182,.12); color:#9b59b6; }
+  .tc-kpi-val { font-family:var(--font-display); font-size:2.4rem; font-weight:900; line-height:1; margin-bottom:.3rem; letter-spacing:-.03em; }
+  .tc-kpi.orange .tc-kpi-val { color:#FF6B00; }
+  .tc-kpi.blue   .tc-kpi-val { color:#3498db; }
+  .tc-kpi.green  .tc-kpi-val { color:#2ecc71; }
+  .tc-kpi.purple .tc-kpi-val { color:#9b59b6; }
+  .tc-kpi-lbl { font-size:.72rem; font-weight:700; text-transform:uppercase; letter-spacing:.07em; color:rgba(255,255,255,.38); }
+
+  /* ── Layout 2 columnas ── */
+  .tc-dashboard-grid { display:grid; grid-template-columns:1fr; gap:1.25rem; align-items:start; }
+
+  /* ── Secciones generales ── */
+  .tc-section { background:linear-gradient(145deg,#181818,#141414); border:1px solid rgba(255,255,255,.08); border-radius:16px; overflow:hidden; margin-bottom:1.25rem; }
+  .tc-section-head { padding:1rem 1.4rem; border-bottom:1px solid rgba(255,255,255,.07); display:flex; align-items:center; justify-content:space-between; }
+  .tc-section-head h3 { font-size:.9rem; font-weight:700; color:#fff; display:flex; align-items:center; gap:.5rem; margin:0; }
+  .tc-section-head h3 i { color:#FF6B00; }
+
+  /* ── Tabla ── */
+  .tc-tbl { width:100%; border-collapse:collapse; }
+  .tc-tbl th { padding:.65rem 1.4rem; font-size:.65rem; font-weight:700; text-transform:uppercase; letter-spacing:.08em; color:#FF6B00; border-bottom:1px solid rgba(255,255,255,.07); text-align:left; }
+  .tc-tbl td { padding:.8rem 1.4rem; border-bottom:1px solid rgba(255,255,255,.05); font-size:.84rem; color:rgba(255,255,255,.82); vertical-align:middle; }
+  .tc-tbl tr:last-child td { border-bottom:none; }
+  .tc-tbl tbody tr:hover { background:rgba(255,107,0,.04); }
+  .t-id { color:rgba(255,255,255,.3)!important; font-size:.75rem!important; }
+  .t-title { font-weight:600; color:#fff; max-width:200px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+
+  /* ── Badges ── */
+  .ub { display:inline-flex;align-items:center;padding:.22rem .65rem;border-radius:99px;font-size:.7rem;font-weight:700; }
+  .ub-resuelto    { background:rgba(46,204,113,.15);  color:#2ecc71; }
+  .ub-pendiente   { background:rgba(255,193,7,.12);   color:#ffc107; }
+  .ub-en_progreso { background:rgba(52,152,219,.15);  color:#3498db; }
+  .ub-asignado    { background:rgba(156,39,176,.12);  color:#ce93d8; }
+  .ub-critica     { background:rgba(231,76,60,.15);   color:#e74c3c; }
+  .ub-alta        { background:rgba(255,107,0,.12);   color:#FF6B00; }
+  .ub-media       { background:rgba(255,193,7,.12);   color:#ffc107; }
+  .ub-baja        { background:rgba(52,152,219,.12);  color:#3498db; }
+
+  /* ── Botones acción ── */
+  .tc-btn { padding:.38rem .8rem; font-size:.73rem; font-weight:700; border-radius:8px; cursor:pointer; border:1px solid; display:inline-flex; align-items:center; gap:.3rem; transition:all .15s; }
+  .tc-btn-blue  { background:rgba(52,152,219,.1);  border-color:rgba(52,152,219,.3);  color:#3498db; }
+  .tc-btn-blue:hover  { background:rgba(52,152,219,.2); }
+  .tc-btn-green { background:rgba(46,204,113,.1);  border-color:rgba(46,204,113,.3);  color:#2ecc71; }
+  .tc-btn-green:hover { background:rgba(46,204,113,.2); }
+  .tc-btn-view  { background:rgba(255,255,255,.05); border-color:rgba(255,255,255,.1); color:rgba(255,255,255,.5); }
+  .tc-btn-view:hover  { background:rgba(255,255,255,.1); color:#fff; }
+
+  /* ── Empty state ── */
+  .tc-empty { text-align:center; padding:3rem; }
+  .tc-empty i { font-size:2.5rem; color:rgba(255,255,255,.08); margin-bottom:.8rem; display:block; }
+  .tc-empty p { color:rgba(255,255,255,.3); font-size:.84rem; }
+
+  /* ── Sidebar cards ── */
+  .tc-side-card { background:linear-gradient(145deg,#181818,#141414); border:1px solid rgba(255,255,255,.08); border-radius:16px; padding:1.2rem 1.3rem; margin-bottom:1.25rem; }
+  .tc-side-title { font-size:.75rem; font-weight:700; text-transform:uppercase; letter-spacing:.07em; color:rgba(255,255,255,.35); margin-bottom:1rem; display:flex; align-items:center; gap:.4rem; }
+  .tc-side-title i { color:#FF6B00; }
+
+  /* ── Perfil card ── */
+  .tc-profile-avatar {
+    width:56px; height:56px; border-radius:50%;
+    background:linear-gradient(135deg,#1565C0,#3498db);
+    display:flex; align-items:center; justify-content:center;
+    font-size:1.5rem; font-weight:800; color:#fff;
+    margin-bottom:.9rem;
+    box-shadow: 0 4px 16px rgba(21,101,192,.4);
+  }
+  .tc-profile-name { font-size:1rem; font-weight:700; color:#fff; }
+  .tc-profile-role { font-size:.75rem; color:#64B5F6; font-weight:600; margin-bottom:1rem; }
+  .tc-profile-stat { display:flex; align-items:center; justify-content:space-between; padding:.5rem 0; border-bottom:1px solid rgba(255,255,255,.06); font-size:.82rem; }
+  .tc-profile-stat:last-child { border-bottom:none; }
+  .tc-profile-stat-label { color:rgba(255,255,255,.4); }
+  .tc-profile-stat-val { font-weight:700; color:#fff; }
+
+  /* ── Actividad reciente ── */
+  .tc-activity-item { display:flex; gap:.75rem; align-items:flex-start; padding:.6rem 0; border-bottom:1px solid rgba(255,255,255,.05); }
+  .tc-activity-item:last-child { border-bottom:none; }
+  .tc-activity-dot { width:8px; height:8px; border-radius:50%; margin-top:.35rem; flex-shrink:0; }
+  .tc-activity-dot.green  { background:#2ecc71; box-shadow:0 0 6px #2ecc71; }
+  .tc-activity-dot.blue   { background:#3498db; box-shadow:0 0 6px #3498db; }
+  .tc-activity-dot.orange { background:#FF6B00; box-shadow:0 0 6px #FF6B00; }
+  .tc-activity-text { font-size:.8rem; color:rgba(255,255,255,.55); line-height:1.5; }
+  .tc-activity-text strong { color:#fff; font-weight:600; }
+  .tc-activity-time { font-size:.7rem; color:rgba(255,255,255,.25); margin-top:.2rem; }
+
+  /* ── Barra progreso ── */
+  .tc-progress-bar-wrap { margin-top:.6rem; }
+  .tc-progress-label { display:flex; justify-content:space-between; font-size:.76rem; color:rgba(255,255,255,.5); margin-bottom:.4rem; }
+  .tc-progress-track { height:6px; background:rgba(255,255,255,.07); border-radius:99px; overflow:hidden; }
+  .tc-progress-fill { height:100%; border-radius:99px; transition:width .6s ease; }
+  .tc-progress-fill.green  { background:linear-gradient(90deg,#27ae60,#2ecc71); }
+  .tc-progress-fill.orange { background:linear-gradient(90deg,#e05500,#FF6B00); }
+  .tc-progress-fill.blue   { background:linear-gradient(90deg,#1565c0,#3498db); }
+
+  /* ── Acceso rápido ── */
+  .tc-quicklinks { display:grid; grid-template-columns:1fr 1fr; gap:.6rem; }
+  .tc-ql-btn {
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    gap:.4rem; padding:.85rem .5rem;
+    background:rgba(255,255,255,.04); border:1px solid rgba(255,255,255,.07);
+    border-radius:12px; text-decoration:none; color:rgba(255,255,255,.55);
+    font-size:.75rem; font-weight:600; text-align:center;
+    transition:all .18s;
+  }
+  .tc-ql-btn i { font-size:1.15rem; }
+  .tc-ql-btn:hover { background:rgba(255,107,0,.08); border-color:rgba(255,107,0,.2); color:#FF6B00; transform:translateY(-2px); }
+
+  .tc-btn-orange { background:rgba(255,107,0,.12); border-color:rgba(255,107,0,.35); color:#FF6B00; }
+  .tc-btn-orange:hover { background:rgba(255,107,0,.22); }
+
+  /* ══ Modal técnico ══ */
+  .tec-modal-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,.78); backdrop-filter:blur(6px); z-index:2000; align-items:center; justify-content:center; }
+  .tec-modal-overlay.open { display:flex; }
+  @keyframes fadeUpTec { from{opacity:0;transform:translateY(22px)} to{opacity:1;transform:translateY(0)} }
+  .tec-modal-box { background:linear-gradient(160deg,#1e1e1e,#161616); border:1px solid rgba(255,255,255,.1); border-radius:22px; padding:2rem; width:500px; max-width:95vw; max-height:90vh; overflow-y:auto; animation:fadeUpTec .24s ease; box-shadow:0 24px 64px rgba(0,0,0,.6); }
+  .tec-modal-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:1.4rem; }
+  .tec-modal-title { font-size:1.1rem; font-weight:800; color:#fff; display:flex; align-items:center; gap:.55rem; }
+  .tec-modal-title i { color:#FF6B00; }
+  .tec-modal-close { background:none; border:none; color:rgba(255,255,255,.3); font-size:1.1rem; cursor:pointer; padding:.3rem; transition:color .15s; line-height:1; }
+  .tec-modal-close:hover { color:#fff; }
+  .tec-pill { background:rgba(255,107,0,.08); border:1px solid rgba(255,107,0,.2); border-radius:10px; padding:.55rem .9rem; font-size:.82rem; color:rgba(255,255,255,.7); display:flex; align-items:center; gap:.5rem; margin-bottom:1.3rem; }
+  .tec-pill i { color:#FF6B00; font-size:.8rem; }
+
+  /* Stepper técnico */
+  .tec-stepper { display:flex; align-items:flex-start; justify-content:center; gap:0; margin-bottom:1.5rem; }
+  .tec-step { display:flex; flex-direction:column; align-items:center; position:relative; flex:1; }
+  .tec-step-line { position:absolute; top:18px; left:50%; width:100%; height:2px; background:rgba(255,255,255,.1); z-index:0; }
+  .tec-step:last-child .tec-step-line { display:none; }
+  .tec-step-line.done { background:linear-gradient(90deg,#FF6B00,rgba(255,107,0,.3)); }
+  .tec-step-circle { width:36px; height:36px; border-radius:50%; border:2px solid rgba(255,255,255,.15); background:#1e1e1e; display:flex; align-items:center; justify-content:center; font-size:.85rem; color:rgba(255,255,255,.3); position:relative; z-index:1; transition:all .2s; cursor:default; }
+  .tec-step.done .tec-step-circle { background:rgba(255,107,0,.2); border-color:#FF6B00; color:#FF6B00; }
+  .tec-step.current .tec-step-circle { background:rgba(255,107,0,.15); border-color:#FF6B00; color:#FF6B00; box-shadow:0 0 0 4px rgba(255,107,0,.12); }
+  .tec-step.selectable .tec-step-circle { border-color:rgba(255,107,0,.5); color:rgba(255,107,0,.6); cursor:pointer; }
+  .tec-step.selectable .tec-step-circle:hover { background:rgba(255,107,0,.15); border-color:#FF6B00; color:#FF6B00; transform:scale(1.12); box-shadow:0 0 0 5px rgba(255,107,0,.15); }
+  .tec-step.selected .tec-step-circle { background:#FF6B00; border-color:#FF6B00; color:#fff; box-shadow:0 0 0 5px rgba(255,107,0,.2); }
+  .tec-step.locked .tec-step-circle { opacity:.3; cursor:not-allowed; }
+  .tec-step-label { font-size:.68rem; font-weight:700; text-transform:uppercase; letter-spacing:.05em; color:rgba(255,255,255,.3); margin-top:.45rem; text-align:center; }
+  .tec-step.done .tec-step-label, .tec-step.current .tec-step-label { color:rgba(255,255,255,.7); }
+  .tec-step.selected .tec-step-label { color:#FF6B00; }
+
+  /* Info box */
+  .tec-info-box { background:rgba(52,152,219,.07); border:1px solid rgba(52,152,219,.2); border-radius:11px; padding:.8rem 1rem; font-size:.8rem; color:rgba(52,152,219,.9); margin-bottom:1rem; display:flex; align-items:flex-start; gap:.55rem; line-height:1.5; }
+  .tec-info-box i { color:#3498db; margin-top:.1rem; flex-shrink:0; }
+
+  /* Botones modal */
+  .tec-btn-submit { width:100%; padding:.78rem; background:linear-gradient(135deg,#e05500,#FF6B00); color:#fff; border:none; border-radius:11px; font-size:.9rem; font-weight:700; cursor:pointer; transition:opacity .2s; display:flex; align-items:center; justify-content:center; gap:.5rem; margin-bottom:.6rem; }
+  .tec-btn-submit:hover { opacity:.88; }
+  .tec-btn-submit:disabled { opacity:.3; cursor:not-allowed; }
+  .tec-estado-label { font-size:.7rem; font-weight:700; color:rgba(255,255,255,.3); text-transform:uppercase; letter-spacing:.07em; margin-bottom:.65rem; display:flex; align-items:center; gap:.4rem; }
+  .tec-estado-label i { color:#FF6B00; }
+
+  /* ── Horario mini en Dashboard ── */
+  .dash-hor-grid {
+    display: grid; grid-template-columns: repeat(7,1fr); gap: .5rem;
+    padding: 1.1rem 1.4rem 1.2rem;
+  }
+  .dash-hor-day {
+    display: flex; flex-direction: column; align-items: center; gap: .35rem;
+    padding: .7rem .3rem; border-radius: 12px;
+    border: 1.5px solid rgba(255,255,255,.07);
+    background: rgba(255,255,255,.03);
+    position: relative; transition: all .18s; min-height: 90px;
+  }
+  .dash-hor-day.avail {
+    background: rgba(46,204,113,.06); border-color: rgba(46,204,113,.25);
+  }
+  .dash-hor-day.weekend.avail {
+    background: rgba(52,152,219,.06); border-color: rgba(52,152,219,.25);
+  }
+  .dash-hor-day.unavail { opacity: .38; }
+  .dash-hor-day::after {
+    content: ''; position: absolute; bottom: 0; left: 0; right: 0; height: 2px;
+    border-radius: 0 0 12px 12px; background: transparent;
+  }
+  .dash-hor-day.avail:not(.weekend)::after { background: #2ecc71; }
+  .dash-hor-day.weekend.avail::after       { background: #3498db; }
+
+  .dash-hor-letter {
+    width: 32px; height: 32px; border-radius: 10px; font-size: .82rem; font-weight: 900;
+    display: flex; align-items: center; justify-content: center;
+    background: rgba(255,255,255,.06); color: rgba(255,255,255,.3);
+  }
+  .dash-hor-day.avail:not(.weekend) .dash-hor-letter { background: rgba(46,204,113,.15); color: #2ecc71; }
+  .dash-hor-day.weekend.avail .dash-hor-letter       { background: rgba(52,152,219,.15); color: #3498db; }
+
+  .dash-hor-name { font-size: .6rem; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; color: rgba(255,255,255,.25); text-align: center; }
+  .dash-hor-day.avail .dash-hor-name { color: rgba(255,255,255,.55); }
+
+  .dash-hor-works {
+    display: flex; flex-direction: column; gap: .2rem; width: 100%; margin-top: auto;
+  }
+  .dash-hor-work-pill {
+    font-size: .58rem; font-weight: 700; padding: .15rem .35rem; border-radius: 5px;
+    text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    background: rgba(255,107,0,.15); border: 1px solid rgba(255,107,0,.3); color: #FF6B00;
+    max-width: 100%;
+  }
+  .dash-hor-free {
+    font-size: .6rem; color: rgba(255,255,255,.18); text-align: center; font-style: italic; margin-top: auto;
+  }
+  .dash-hor-count-badge {
+    position: absolute; top: -5px; right: -5px;
+    width: 18px; height: 18px; border-radius: 50%;
+    background: #FF6B00; color: #fff; font-size: .6rem; font-weight: 800;
+    display: flex; align-items: center; justify-content: center;
+    border: 2px solid #111;
+  }
+  @media(max-width:900px){
+    .tc-kpi-grid { grid-template-columns:repeat(2,1fr); }
+    .tc-dashboard-grid { grid-template-columns:1fr; }
+  }
+  @media(max-width:560px){
+    .tc-kpi-grid { grid-template-columns:1fr 1fr; }
+  }
+</style>
+
+{# Calcular tasa de resolución #}
+{% set total = trabajos|length %}
+{% set pct_resueltos = ((resueltos|length / total * 100)|round(0,'floor'))|int if total > 0 else 0 %}
+{% set pct_activos   = ((activos|length   / total * 100)|round(0,'floor'))|int if total > 0 else 0 %}
+{% set pendientes    = trabajos|selectattr('estado','equalto','asignado')|list %}
+
+<!-- ══ KPIs ══ -->
+<div class="tc-kpi-grid">
+  <div class="tc-kpi orange">
+    <div class="tc-kpi-icon"><i class="fa fa-list-check"></i></div>
+    <div class="tc-kpi-val">{{ total }}</div>
+    <div class="tc-kpi-lbl">Total asignados</div>
+  </div>
+  <div class="tc-kpi blue">
+    <div class="tc-kpi-icon"><i class="fa fa-wrench"></i></div>
+    <div class="tc-kpi-val">{{ activos|length }}</div>
+    <div class="tc-kpi-lbl">En progreso</div>
+  </div>
+  <div class="tc-kpi green">
+    <div class="tc-kpi-icon"><i class="fa fa-check-circle"></i></div>
+    <div class="tc-kpi-val">{{ resueltos|length }}</div>
+    <div class="tc-kpi-lbl">Resueltos</div>
+  </div>
+  <div class="tc-kpi purple">
+    <div class="tc-kpi-icon"><i class="fa fa-hourglass-half"></i></div>
+    <div class="tc-kpi-val">{{ pendientes|length }}</div>
+    <div class="tc-kpi-lbl">Por iniciar</div>
+  </div>
+</div>
+
+<!-- ══ Layout principal ══ -->
+<div class="tc-dashboard-grid">
+
+  <!-- Columna izquierda -->
+  <div>
+
+    <!-- Tabla trabajos activos -->
+    <div class="tc-section" id="mis-trabajos">
+      <div class="tc-section-head">
+        <h3><i class="fa fa-wrench"></i> Trabajos asignados</h3>
+        {% if activos %}
+        <span style="background:rgba(255,107,0,.1);border:1px solid rgba(255,107,0,.2);color:#FF6B00;font-size:.7rem;font-weight:700;padding:.22rem .65rem;border-radius:99px;">
+          {{ activos|length }} activo{{ 's' if activos|length != 1 else '' }}
+        </span>
+        {% endif %}
+      </div>
+      <div style="overflow-x:auto;">
+        {% if trabajos %}
+        <table class="tc-tbl">
+          <thead>
+            <tr><th>#</th><th>Título</th><th>Categoría</th><th>Ciudad</th><th>Prioridad</th><th>Estado</th><th>Fecha</th><th>Acciones</th></tr>
+          </thead>
+          <tbody>
+            {% for r in trabajos %}
+            <tr>
+              <td class="t-id">#{{ r.id }}</td>
+              <td>
+                <div class="t-title" title="{{ r.titulo }}">{{ r.titulo }}</div>
+                {% if r.direccion %}
+                <div style="font-size:.72rem;color:rgba(255,255,255,.3);margin-top:.1rem;"><i class="fa fa-location-dot" style="color:#FF6B00;font-size:.65rem;"></i> {{ r.direccion[:40] }}…</div>
+                {% endif %}
+              </td>
+              <td style="color:rgba(255,255,255,.45);font-size:.79rem;">{{ r.categoria_nombre or '—' }}</td>
+              <td style="font-size:.79rem;color:rgba(255,255,255,.55);">{{ r.ciudad }}</td>
+              <td><span class="ub ub-{{ r.prioridad }}">{{ r.prioridad.title() }}</span></td>
+              <td><span class="ub ub-{{ r.estado }}">{{ r.estado.replace('_',' ').title() }}</span></td>
+              <td style="font-size:.74rem;color:rgba(255,255,255,.3);white-space:nowrap;">
+                {% if r.creado_en %}{{ r.creado_en.strftime('%d/%m/%Y') if r.creado_en else '—' }}{% else %}—{% endif %}
+              </td>
+              <td>
+                <div style="display:flex;gap:.35rem;flex-wrap:wrap;">
+                  {% if r.estado in ('asignado', 'en_progreso') %}
+                  <button class="tc-btn tc-btn-orange"
+                    onclick="abrirModalTec({{ r.id }}, '{{ r.titulo|replace("'","\\'")|truncate(45,True,'...') }}', '{{ r.estado }}')">
+                    <i class="fa fa-wrench"></i> Gestionar
+                  </button>
+                  {% else %}
+                  <span style="color:rgba(255,255,255,.2);font-size:.75rem;"><i class="fa fa-circle-check"></i> Completado</span>
+                  {% endif %}
+                  <a href="{{ url_for('detalle_reporte', reporte_id=r.id) }}" class="tc-btn tc-btn-view"><i class="fa fa-eye"></i></a>
+                </div>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+        {% else %}
+        <div class="tc-empty">
+          <i class="fa fa-clipboard-check"></i>
+          <p>No tienes trabajos asignados por el momento.</p>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+
+
+    <!-- ── Mi Horario (mini) ── -->
+    <div class="tc-section" style="margin-bottom:1.25rem;">
+      <div class="tc-section-head">
+        <h3><i class="fa fa-calendar-week"></i> Mi Horario Semanal</h3>
+        <a href="{{ url_for('tecnico_horario') }}" style="font-size:.76rem;color:rgba(255,107,0,.8);text-decoration:none;display:flex;align-items:center;gap:.35rem;font-weight:700;transition:color .15s;" onmouseover="this.style.color='#FF6B00'" onmouseout="this.style.color='rgba(255,107,0,.8)'">
+          <i class="fa fa-gear"></i> Configurar
+        </a>
+      </div>
+      <div class="dash-hor-grid">
+        {% set letras  = ['L','M','X','J','V','S','D'] %}
+        {% set nombres = ['Lun','Mar','Mié','Jue','Vie','Sáb','Dom'] %}
+        {% for i in range(7) %}
+          {% set r      = horario_rows.get(i) if horario_rows is defined else none %}
+          {% set disp   = r.disponible if r else false %}
+          {% set tw     = trabajos_por_dia.get(i, []) if trabajos_por_dia is defined else [] %}
+          {% set is_wk  = i >= 5 %}
+          <div class="dash-hor-day {% if disp %}avail{% else %}unavail{% endif %} {% if is_wk %}weekend{% endif %}">
+            {% if tw %}<div class="dash-hor-count-badge">{{ tw|length }}</div>{% endif %}
+            <div class="dash-hor-letter">{{ letras[i] }}</div>
+            <div class="dash-hor-name">{{ nombres[i] }}</div>
+            {% if tw %}
+            <div class="dash-hor-works">
+              {% for t in tw[:2] %}
+              <div class="dash-hor-work-pill" title="{{ t.titulo }}">#{{ t.id }}</div>
+              {% endfor %}
+              {% if tw|length > 2 %}
+              <div class="dash-hor-work-pill" style="background:rgba(255,255,255,.06);border-color:rgba(255,255,255,.1);color:rgba(255,255,255,.3);">+{{ tw|length - 2 }} más</div>
+              {% endif %}
+            </div>
+            {% elif disp %}
+            <div class="dash-hor-free">Libre</div>
+            {% endif %}
+          </div>
+        {% endfor %}
+      </div>
+    </div>
+
+    <!-- Progreso del técnico -->
+    <div class="tc-section">
+      <div class="tc-section-head">
+        <h3><i class="fa fa-chart-line"></i> Mi rendimiento</h3>
+      </div>
+      <div style="padding:1.2rem 1.4rem;">
+        <div class="tc-progress-bar-wrap">
+          <div class="tc-progress-label">
+            <span><i class="fa fa-check" style="color:#2ecc71;"></i> Tasa de resolución</span>
+            <span style="color:#2ecc71;font-weight:700;">{{ pct_resueltos }}%</span>
+          </div>
+          <div class="tc-progress-track"><div class="tc-progress-fill green" style="width:{{ pct_resueltos }}%;"></div></div>
+        </div>
+        <div class="tc-progress-bar-wrap" style="margin-top:1rem;">
+          <div class="tc-progress-label">
+            <span><i class="fa fa-wrench" style="color:#3498db;"></i> En progreso</span>
+            <span style="color:#3498db;font-weight:700;">{{ pct_activos }}%</span>
+          </div>
+          <div class="tc-progress-track"><div class="tc-progress-fill blue" style="width:{{ pct_activos }}%;"></div></div>
+        </div>
+        <div class="tc-progress-bar-wrap" style="margin-top:1rem;">
+          <div class="tc-progress-label">
+            <span><i class="fa fa-hourglass-half" style="color:#FF6B00;"></i> Carga de trabajo</span>
+            <span style="color:#FF6B00;font-weight:700;">{{ [activos|length * 20, 100]|min }}%</span>
+          </div>
+          <div class="tc-progress-track"><div class="tc-progress-fill orange" style="width:{{ [activos|length * 20, 100]|min }}%;"></div></div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /col izquierda -->
+
+
+</div><!-- /tc-dashboard-grid -->
+
+<!-- ══ Modal Gestionar Reporte (Técnico) ══ -->
+<div class="tec-modal-overlay" id="tecModal" onclick="if(event.target===this)cerrarModalTec()">
+  <div class="tec-modal-box">
+    <div class="tec-modal-header">
+      <div class="tec-modal-title">
+        <i class="fa fa-screwdriver-wrench"></i> Gestionar Reporte
+      </div>
+      <button class="tec-modal-close" onclick="cerrarModalTec()"><i class="fa fa-xmark"></i></button>
+    </div>
+
+    <!-- Pill con título del reporte -->
+    <div class="tec-pill">
+      <i class="fa fa-hashtag"></i>
+      <span id="tecModalTitulo">—</span>
+    </div>
+
+    <form method="POST" id="tecModalForm">
+      <input type="hidden" name="csrf_token" value="{{ session.get('_csrf_token','') }}">
+
+      <!-- Label stepper -->
+      <div class="tec-estado-label">
+        <i class="fa fa-arrow-right"></i> Selecciona el siguiente estado
+      </div>
+
+      <!-- Stepper -->
+      <div class="tec-stepper" id="tecStepper"></div>
+
+      <!-- Info cuando ya está en el último paso del técnico -->
+      <div class="tec-info-box" id="tecInfoBox" style="display:none;">
+        <i class="fa fa-circle-info"></i>
+        <span id="tecInfoMsg">Este reporte ya está en el estado máximo que puedes gestionar.</span>
+      </div>
+
+      <!-- Botón submit -->
+      <button type="submit" class="tec-btn-submit" id="tecSubmit" disabled>
+        <i class="fa fa-check"></i> <span id="tecSubmitLabel">Guardar cambios</span>
+      </button>
+    </form>
+  </div>
+</div>
+
+<script>
+const TEC_ESTADOS = ['asignado','en_progreso','resuelto'];
+const TEC_LABELS  = ['Asignado','En Progreso','Resuelto'];
+const TEC_ICONS   = ['fa-user-gear','fa-screwdriver-wrench','fa-circle-check'];
+const TEC_URLS    = {
+  'en_progreso': (id) => `/tecnico/reporte/${id}/progreso`,
+  'resuelto':    (id) => `/tecnico/reporte/${id}/resolver`
+};
+
+let _tecId = null, _tecEstado = '', _tecSelected = '';
+
+function renderTecStepper() {
+  const stepper = document.getElementById('tecStepper');
+  const currentIdx = TEC_ESTADOS.indexOf(_tecEstado);
+  stepper.innerHTML = '';
+
+  TEC_ESTADOS.forEach((e, i) => {
+    const isDone      = i < currentIdx;
+    const isCurrent   = i === currentIdx;
+    const isNext      = i === currentIdx + 1;
+    const isLocked    = !isDone && !isCurrent && !isNext;
+    const isSelected  = e === _tecSelected;
+
+    let cls = 'tec-step';
+    if (isDone)     cls += ' done';
+    if (isCurrent)  cls += ' current';
+    if (isNext)     cls += ' selectable';
+    if (isLocked)   cls += ' locked';
+    if (isSelected) cls += ' selected';
+
+    const onclick = isNext ? `onclick="selectTecEstado('${e}')"` : '';
+    const lineClass = isDone ? 'done' : '';
+
+    stepper.innerHTML += `
+      <div class="${cls}">
+        <div class="tec-step-line ${lineClass}"></div>
+        <div class="tec-step-circle" ${onclick}>
+          ${isDone ? '<i class="fa fa-check"></i>' : `<i class="fa ${TEC_ICONS[i]}"></i>`}
+        </div>
+        <div class="tec-step-label">${TEC_LABELS[i]}</div>
+      </div>`;
+  });
+}
+
+function selectTecEstado(estado) {
+  _tecSelected = estado;
+  renderTecStepper();
+  updateTecSubmit();
+}
+
+function updateTecSubmit() {
+  const btn   = document.getElementById('tecSubmit');
+  const label = document.getElementById('tecSubmitLabel');
+  btn.disabled = !_tecSelected;
+  if (_tecSelected === 'en_progreso') label.textContent = 'Guardar cambios';
+  else if (_tecSelected === 'resuelto') label.textContent = 'Guardar cambios';
+  else label.textContent = 'Guardar cambios';
+}
+
+// Toast de confirmación interno (no recarga)
+function mostrarToastTec(msg, tipo) {
+  let toast = document.getElementById('tecToast');
+  if (!toast) {
+    toast = document.createElement('div');
+    toast.id = 'tecToast';
+    toast.style.cssText = 'position:fixed;bottom:2rem;right:2rem;z-index:9999;padding:.85rem 1.4rem;border-radius:14px;font-size:.88rem;font-weight:700;display:flex;align-items:center;gap:.6rem;box-shadow:0 8px 32px rgba(0,0,0,.5);transition:opacity .4s;opacity:0;pointer-events:none;';
+    document.body.appendChild(toast);
+  }
+  if (tipo === 'ok') {
+    toast.style.background = 'rgba(46,204,113,.15)';
+    toast.style.border = '1px solid rgba(46,204,113,.4)';
+    toast.style.color = '#2ecc71';
+    toast.innerHTML = '<i class="fa fa-circle-check"></i> ' + msg;
+  } else {
+    toast.style.background = 'rgba(231,76,60,.15)';
+    toast.style.border = '1px solid rgba(231,76,60,.4)';
+    toast.style.color = '#e74c3c';
+    toast.innerHTML = '<i class="fa fa-circle-xmark"></i> ' + msg;
+  }
+  toast.style.opacity = '1';
+  toast.style.pointerEvents = 'auto';
+  setTimeout(() => { toast.style.opacity = '0'; toast.style.pointerEvents = 'none'; }, 3200);
+}
+
+// Actualiza la fila de la tabla sin recargar la página
+function actualizarFilaTabla(reporteId, nuevoEstado) {
+  const fila = document.querySelector(`.mt-row[data-id="${reporteId}"], tr[data-id="${reporteId}"]`);
+  if (!fila) return;
+
+  const LABELS = { asignado:'Asignado', en_progreso:'En Progreso', resuelto:'Resuelto' };
+  const CLASES = { asignado:'ub-asignado', en_progreso:'ub-en_progreso', resuelto:'ub-resuelto' };
+
+  // Actualizar badge de estado
+  const badge = fila.querySelector('.ub[class*="ub-asignado"], .ub[class*="ub-en_progreso"], .ub[class*="ub-resuelto"]');
+  if (badge) {
+    badge.className = 'ub ' + (CLASES[nuevoEstado] || '');
+    badge.textContent = LABELS[nuevoEstado] || nuevoEstado;
+  }
+
+  // Actualizar dataset para filtros
+  fila.dataset.estado = nuevoEstado;
+
+  // Actualizar botones de acción
+  const accionDiv = fila.querySelector('td:last-child div');
+  if (accionDiv) {
+    if (nuevoEstado === 'en_progreso') {
+      accionDiv.innerHTML = `
+        <button class="mt-btn mt-btn-green" onclick="abrirModalTec(${reporteId}, this.closest('tr').querySelector('.t-title-main')?.textContent || '', 'en_progreso')">
+          <i class="fa fa-check"></i> Resolver
+        </button>
+        <a href="/reportes/${reporteId}" class="mt-btn mt-btn-view"><i class="fa fa-eye"></i></a>`;
+    } else if (nuevoEstado === 'resuelto') {
+      accionDiv.innerHTML = `
+        <span style="color:rgba(255,255,255,.2);font-size:.75rem;"><i class="fa fa-circle-check"></i> Completado</span>
+        <a href="/reportes/${reporteId}" class="mt-btn mt-btn-view"><i class="fa fa-eye"></i></a>`;
+    }
+  }
+}
+
+function abrirModalTec(id, titulo, estado) {
+  _tecId       = id;
+  _tecEstado   = estado;
+  _tecSelected = '';
+
+  document.getElementById('tecModalTitulo').textContent = '#' + id + ' · ' + titulo;
+  document.getElementById('tecSubmit').disabled = true;
+  document.getElementById('tecSubmitLabel').textContent = 'Guardar cambios';
+
+  const infoBox = document.getElementById('tecInfoBox');
+  const isMax = (TEC_ESTADOS.indexOf(estado) >= TEC_ESTADOS.length - 1);
+  infoBox.style.display = isMax ? 'flex' : 'none';
+
+  // Submit via AJAX — no recarga, no cierra el modal
+  const form = document.getElementById('tecModalForm');
+  form.onsubmit = async function(e) {
+    e.preventDefault();
+    if (!_tecSelected) return;
+
+    if (_tecSelected === 'resuelto') {
+      if (!confirm('¿Confirmas que el reporte está resuelto?')) return;
+    }
+
+    const btn = document.getElementById('tecSubmit');
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fa fa-spinner fa-spin"></i> Guardando…';
+
+    try {
+      const url = TEC_URLS[_tecSelected](_tecId);
+      const resp = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: 'csrf_token=' + encodeURIComponent(document.querySelector('[name=csrf_token]')?.value || '')
+      });
+
+      if (resp.ok || resp.redirected) {
+        // Actualizar estado local sin recargar
+        _tecEstado   = _tecSelected;
+        _tecSelected = '';
+        actualizarFilaTabla(_tecId, _tecEstado);
+        renderTecStepper();
+        btn.innerHTML = '<i class="fa fa-check"></i> Guardar cambios';
+        btn.disabled  = true;
+        mostrarToastTec('¡Estado actualizado correctamente!', 'ok');
+      } else {
+        throw new Error('Error ' + resp.status);
+      }
+    } catch (err) {
+      btn.disabled = false;
+      btn.innerHTML = '<i class="fa fa-check"></i> Guardar cambios';
+      mostrarToastTec('Error al guardar. Intenta de nuevo.', 'error');
+    }
+  };
+
+  renderTecStepper();
+  document.getElementById('tecModal').classList.add('open');
+}
+
+function cerrarModalTec() {
+  document.getElementById('tecModal').classList.remove('open');
+}
+document.addEventListener('keydown', e => { if(e.key==='Escape') cerrarModalTec(); });
+</script>
+
+{% endblock %}

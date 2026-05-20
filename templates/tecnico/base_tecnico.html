@@ -1,0 +1,512 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}Panel Técnico — Urban Alert{% endblock %}</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/urban-alert.css') }}">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <style>
+    .tc-wrap { display:flex; flex-direction:column; min-height:100vh; background:#0d0d0d; }
+
+    .tc-navbar {
+      height: 68px; flex-shrink: 0;
+      background: rgba(10,10,10,.97);
+      backdrop-filter: blur(20px);
+      border-bottom: 1px solid rgba(255,107,0,.14);
+      display: flex; align-items: center;
+      padding: 0 2rem; gap: 1.5rem;
+      position: sticky; top: 0; z-index: 100;
+    }
+    .tc-brand { display:flex; align-items:center; gap:6px; text-decoration:none; font-size:1.2rem; font-weight:800; color:#fff; letter-spacing:-.3px; }
+    .tc-brand-icon {
+      width: 38px; height: 38px; border-radius: 11px;
+      background: var(--naranja);
+      display: flex; align-items: center; justify-content: center;
+      color: #fff; font-size: 1.1rem;
+    }
+    .tc-brand-text {
+      font-family: var(--font-display); font-size: 1.2rem;
+      font-weight: 800; color: #fff; letter-spacing: -.02em;
+    }
+    .tc-brand-text span { color: var(--naranja); }
+
+    .tc-sep { width: 1px; height: 24px; background: rgba(255,255,255,.1); flex-shrink: 0; }
+
+    .tc-nav { display:flex; align-items:center; gap:.2rem; flex: 1; }
+    .tc-nav-link {
+      display: flex; align-items: center; gap: .45rem;
+      padding: .5rem .9rem;
+      color: rgba(255,255,255,.55);
+      font-size: .875rem; font-weight: 500;
+      text-decoration: none; border-radius: 9px;
+      transition: all .18s; white-space: nowrap;
+    }
+    .tc-nav-link:hover { color: #fff; background: rgba(255,255,255,.07); }
+    .tc-nav-link.active { color: var(--naranja); background: rgba(255,107,0,.1); }
+    .tc-nav-link i { font-size: .8rem; }
+
+    .tc-nav-right { display: flex; align-items: center; gap: .75rem; margin-left: auto; }
+
+    /* ── Campanita ── */
+    .tc-bell-wrap { position: relative; }
+    .tc-bell-btn {
+      width: 36px; height: 36px; border-radius: 50%;
+      background: rgba(255,255,255,.07);
+      border: 1px solid rgba(255,255,255,.1);
+      display: flex; align-items: center; justify-content: center;
+      color: rgba(255,255,255,.6); font-size: .95rem;
+      cursor: pointer; transition: all .18s; flex-shrink: 0;
+    }
+    .tc-bell-btn:hover { color: #fff; background: rgba(255,255,255,.12); }
+    .tc-bell-btn.has-notif { color: var(--naranja); border-color: rgba(255,107,0,.35); }
+    .tc-bell-badge {
+      position: absolute; top: -4px; right: -4px;
+      background: #e74c3c; color: #fff;
+      font-size: .6rem; font-weight: 800;
+      width: 17px; height: 17px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      border: 2px solid #0d0d0d;
+    }
+    .tc-notif-panel {
+      display: none; position: absolute; top: calc(100% + .7rem); right: 0;
+      width: 340px; background: #1a1a1a;
+      border: 1px solid rgba(255,255,255,.1);
+      border-radius: 16px; overflow: hidden;
+      box-shadow: 0 20px 60px rgba(0,0,0,.7); z-index: 999;
+      animation: fadeUp .2s ease;
+    }
+    .tc-notif-panel.open { display: block; }
+    .tc-notif-header {
+      padding: .85rem 1.1rem;
+      border-bottom: 1px solid rgba(255,255,255,.08);
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .tc-notif-title { font-size: .83rem; font-weight: 700; color: #fff; }
+    .tc-notif-mark { font-size: .72rem; color: var(--naranja); cursor: pointer; background:none; border:none; }
+    .tc-notif-mark:hover { text-decoration: underline; }
+    .tc-notif-list { max-height: 340px; overflow-y: auto; }
+    .tc-notif-item {
+      padding: .8rem 1.1rem; border-bottom: 1px solid rgba(255,255,255,.05);
+      display: flex; gap: .7rem; align-items: flex-start; cursor: pointer;
+      transition: background .15s;
+    }
+    .tc-notif-item:hover { background: rgba(255,255,255,.04); }
+    .tc-notif-item.unread { background: rgba(255,107,0,.05); }
+    .tc-notif-icon {
+      width: 34px; height: 34px; border-radius: 10px; flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center; font-size: .85rem;
+    }
+    .tc-notif-icon.exito   { background: rgba(46,204,113,.15); color: #2ecc71; }
+    .tc-notif-icon.info    { background: rgba(52,152,219,.15); color: #3498db; }
+    .tc-notif-icon.advertencia { background: rgba(255,107,0,.15); color: var(--naranja); }
+    .tc-notif-icon.error   { background: rgba(231,76,60,.15); color: #e74c3c; }
+    .tc-notif-body { flex: 1; min-width: 0; }
+    .tc-notif-ntitle { font-size: .8rem; font-weight: 700; color: #fff; margin-bottom: .15rem; }
+    .tc-notif-msg { font-size: .75rem; color: rgba(255,255,255,.5); line-height: 1.4; }
+    .tc-notif-time { font-size: .68rem; color: rgba(255,255,255,.3); margin-top: .2rem; }
+    .tc-notif-empty { padding: 2rem 1.1rem; text-align: center; color: rgba(255,255,255,.3); font-size: .83rem; }
+
+    /* ── Toggle disponibilidad ── */
+    .tc-avail-toggle {
+      display: flex; align-items: center; gap: .45rem; cursor: pointer;
+      font-size: .75rem; font-weight: 600; padding: .35rem .85rem;
+      border-radius: 99px; border: 1px solid; transition: all .2s;
+      background: none; white-space: nowrap;
+    }
+    .tc-avail-toggle.avail {
+      color: #2ecc71; border-color: rgba(46,204,113,.3);
+      background: rgba(46,204,113,.08);
+    }
+    .tc-avail-toggle.unavail {
+      color: rgba(255,255,255,.4); border-color: rgba(255,255,255,.12);
+      background: rgba(255,255,255,.04);
+    }
+    .tc-avail-dot {
+      width: 7px; height: 7px; border-radius: 50%;
+      animation: pulse-orange 2s infinite;
+    }
+    .tc-avail-toggle.avail .tc-avail-dot { background: #2ecc71; }
+    .tc-avail-toggle.unavail .tc-avail-dot { background: rgba(255,255,255,.3); animation: none; }
+
+    .tc-user-wrap { position: relative; }
+    .tc-avatar-btn {
+      width: 36px; height: 36px; border-radius: 50%;
+      background: #1565C0;
+      display: flex; align-items: center; justify-content: center;
+      color: #fff; font-weight: 800; font-size: .88rem;
+      cursor: pointer; border: none; flex-shrink: 0;
+      transition: box-shadow .18s;
+    }
+    .tc-avatar-btn:hover { box-shadow: 0 0 0 3px rgba(21,101,192,.4); }
+    .tc-dropdown {
+      display: none; position: absolute; top: calc(100% + .6rem); right: 0;
+      background: #1c1c1c; border: 1px solid rgba(255,255,255,.12);
+      border-radius: 14px; padding: .5rem; min-width: 200px;
+      box-shadow: 0 16px 48px rgba(0,0,0,.6); z-index: 999;
+      animation: fadeUp .2s ease;
+    }
+    .tc-dropdown.open { display: block; }
+    .tc-dropdown-info {
+      padding: .75rem .9rem .6rem;
+      border-bottom: 1px solid rgba(255,255,255,.08);
+      margin-bottom: .4rem;
+    }
+    .tc-dropdown-name { font-size: .88rem; font-weight: 700; color: #fff; }
+    .tc-dropdown-role { font-size: .72rem; color: #64B5F6; font-weight: 600; margin-top: .1rem; }
+    .tc-dropdown-item {
+      display: flex; align-items: center; gap: .55rem;
+      padding: .55rem .9rem; border-radius: 9px;
+      color: rgba(255,255,255,.55); font-size: .83rem; font-weight: 500;
+      text-decoration: none; transition: all .15s;
+    }
+    .tc-dropdown-item:hover { color: #fff; background: rgba(255,255,255,.07); }
+    .tc-dropdown-item.danger:hover { color: #e74c3c; background: rgba(231,76,60,.1); }
+    .tc-dropdown-item i { width: 16px; text-align: center; }
+
+    .tc-content { flex: 1; background: #0d0d0d; }
+
+    .tc-flash-wrap { position: fixed; bottom: 1.5rem; right: 1.5rem; z-index: 9999; min-width: 300px; }
+    .tc-flash {
+      padding: .9rem 1.2rem; border-radius: 12px;
+      font-size: .875rem; font-weight: 600;
+      display: flex; align-items: center; gap: .6rem;
+      margin-bottom: .5rem; animation: fadeUp .35s ease both;
+    }
+    .tc-flash.success { background: rgba(46,204,113,.12); border:1px solid rgba(46,204,113,.3); color: #2ecc71; }
+    .tc-flash.danger  { background: rgba(231,76,60,.12);  border:1px solid rgba(231,76,60,.3);  color: #e74c3c; }
+    .tc-flash.warning { background: rgba(255,107,0,.12);  border:1px solid rgba(255,107,0,.3);  color: var(--naranja); }
+
+    @media (max-width: 768px) {
+      .tc-navbar { padding: 0 1rem; }
+      .tc-nav { display: none; }
+      .tc-content { padding: 1rem; }
+    }
+  </style>
+  {% block head %}{% endblock %}
+</head>
+<body>
+<div class="tc-wrap">
+
+  <nav class="tc-navbar">
+    <a href="{{ url_for('tecnico_dashboard') }}" class="tc-brand">
+      <img src="{{ url_for('static', filename='images/logo.png') }}" alt="UrbanAlert" style="height:64px;width:auto;object-fit:contain;filter:drop-shadow(0 0 10px rgba(255,107,0,0.7));">Urban<span>Alert</span>
+    </a>
+
+    <div class="tc-sep"></div>
+
+    <div class="tc-nav">
+      <a href="{{ url_for('tecnico_dashboard') }}"
+         class="tc-nav-link {% if request.endpoint == 'tecnico_dashboard' %}active{% endif %}">
+        <i class="fa fa-house"></i> Dashboard
+      </a>
+      <a href="{{ url_for('tecnico_mapa') }}"
+         class="tc-nav-link {% if request.endpoint == 'tecnico_mapa' %}active{% endif %}">
+        <i class="fa fa-map"></i> Mapa
+      </a>
+      <a href="{{ url_for('tecnico_mis_trabajos') }}"
+         class="tc-nav-link {% if request.endpoint == 'tecnico_mis_trabajos' %}active{% endif %}">
+        <i class="fa fa-briefcase"></i> Mis Trabajos
+      </a>
+      <a href="{{ url_for('tecnico_horario') }}"
+         class="tc-nav-link {% if request.endpoint == 'tecnico_horario' %}active{% endif %}">
+        <i class="fa fa-calendar-check"></i> Mi Horario
+      </a>
+    </div>
+
+    <div class="tc-nav-right">
+      <!-- Toggle disponibilidad -->
+      <button class="tc-avail-toggle avail" id="availBtn" onclick="toggleDisponible()" title="Cambiar disponibilidad">
+        <span class="tc-avail-dot"></span>
+        <span id="availText">Disponible</span>
+      </button>
+
+      <!-- Campanita -->
+      <div class="tc-bell-wrap">
+        <button class="tc-bell-btn" id="bellBtn" onclick="toggleNotifPanel()" title="Notificaciones">
+          <i class="fa fa-bell"></i>
+        </button>
+        <span class="tc-bell-badge" id="bellBadge" style="display:none">0</span>
+        <div class="tc-notif-panel" id="notifPanel">
+          <div class="tc-notif-header">
+            <span class="tc-notif-title"><i class="fa fa-bell" style="color:var(--naranja);margin-right:.4rem"></i>Notificaciones</span>
+            <button class="tc-notif-mark" onclick="marcarTodasLeidas()">Marcar todas leídas</button>
+          </div>
+          <div class="tc-notif-list" id="notifList">
+            <div class="tc-notif-empty"><i class="fa fa-bell-slash" style="font-size:1.4rem;margin-bottom:.5rem;display:block"></i>Sin notificaciones</div>
+          </div>
+        </div>
+      </div>
+      <div class="tc-user-wrap">
+        <button class="tc-avatar-btn" onclick="toggleDropdown('tcDrop')">
+          {{ session.nombre[0]|upper if session.nombre else 'T' }}
+        </button>
+        <div class="tc-dropdown" id="tcDrop">
+          <div class="tc-dropdown-info">
+            <div class="tc-dropdown-name">{{ session.nombre }}</div>
+            <div class="tc-dropdown-role">Técnico</div>
+          </div>
+          <a href="{{ url_for('mi_perfil') }}" class="tc-dropdown-item">
+            <i class="fa fa-user"></i> Mi perfil
+          </a>
+          <a href="{{ url_for('logout') }}" class="tc-dropdown-item danger">
+            <i class="fa fa-right-from-bracket"></i> Cerrar sesión
+          </a>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+    <div class="tc-flash-wrap">
+      {% for cat, msg in messages %}
+      <div class="tc-flash {{ cat }}"><i class="fa fa-circle-check"></i> {{ msg }}</div>
+      {% endfor %}
+    </div>
+    {% endif %}
+  {% endwith %}
+
+  <div class="tc-content">
+    <div style="max-width:1300px;margin:0 auto;padding:1.75rem 2rem;">
+      {% block content %}{% endblock %}
+    </div>
+  </div>
+
+  <!-- Footer Premium Técnico -->
+  <footer class="footer-premium">
+    <div class="footer-body">
+      <div class="container-ua">
+        <div class="footer-grid-main">
+          <div class="footer-col-brand">
+            <div class="footer-logo">
+              <div class="footer-logo-icon"><i class="fa-solid fa-triangle-exclamation"></i></div>
+              <span class="footer-logo-name">Urban<em>Alert</em></span>
+            </div>
+            <p class="footer-tagline">Panel técnico para gestionar y resolver reportes urbanos asignados en tu zona de cobertura.</p>
+            <div class="footer-cities-label">Ciudades activas</div>
+            <div class="footer-cities-pills">
+              <span class="fp-pill"><i class="fa fa-location-dot"></i> Facatativá</span>
+              <span class="fp-pill"><i class="fa fa-location-dot"></i> Madrid</span>
+              <span class="fp-pill"><i class="fa fa-location-dot"></i> Mosquera</span>
+            </div>
+            <div class="footer-social">
+              <a href="https://wa.me/573025554151" target="_blank" rel="noopener" class="fs-btn wa" title="WhatsApp"><i class="fa-brands fa-whatsapp"></i></a>
+              <a href="#" class="fs-btn ig" title="Instagram"><i class="fa-brands fa-instagram"></i></a>
+              <a href="#" class="fs-btn fb" title="Facebook"><i class="fa-brands fa-facebook-f"></i></a>
+              <a href="#" class="fs-btn tw" title="X / Twitter"><i class="fa-brands fa-x-twitter"></i></a>
+            </div>
+          </div>
+          <div class="footer-col">
+            <div class="footer-col-title"><i class="fa fa-toolbox"></i> Mi panel</div>
+            <ul class="fp-links">
+              <li><a href="{{ url_for('tecnico_dashboard') }}"><i class="fa fa-chevron-right"></i> Dashboard</a></li>
+              <li><a href="{{ url_for('tecnico_mapa') }}"><i class="fa fa-chevron-right"></i> Mapa de trabajos</a></li>
+              <li><a href="{{ url_for('mi_perfil') }}"><i class="fa fa-chevron-right"></i> Mi perfil</a></li>
+              <li><a href="{{ url_for('logout') }}"><i class="fa fa-chevron-right"></i> Cerrar sesión</a></li>
+            </ul>
+          </div>
+          <div class="footer-col">
+            <div class="footer-col-title"><i class="fa fa-microchip"></i> Tecnología</div>
+            <ul class="fp-links">
+              <li><a href="#"><i class="fa fa-chevron-right"></i> IA con Claude Vision</a></li>
+              <li><a href="#"><i class="fa fa-chevron-right"></i> Mapa interactivo</a></li>
+              <li><a href="#"><i class="fa fa-chevron-right"></i> Alertas en tiempo real</a></li>
+              <li><a href="#"><i class="fa fa-chevron-right"></i> Análisis predictivo</a></li>
+            </ul>
+          </div>
+          <div class="footer-col">
+            <div class="footer-col-title"><i class="fa fa-headset"></i> Soporte</div>
+            <div class="fp-contact-list">
+              <a href="https://wa.me/573025554151" target="_blank" rel="noopener" class="fp-contact-item">
+                <span class="fpc-icon wa"><i class="fa-brands fa-whatsapp"></i></span>
+                <div><div class="fpc-label">WhatsApp</div><div class="fpc-value">+57 302 555 4151</div></div>
+              </a>
+              <a href="mailto:soporte@urbanalert.co" class="fp-contact-item">
+                <span class="fpc-icon em"><i class="fa fa-envelope"></i></span>
+                <div><div class="fpc-label">Soporte</div><div class="fpc-value">soporte@urbanalert.co</div></div>
+              </a>
+              <div class="fp-contact-item" style="cursor:default;">
+                <span class="fpc-icon lo"><i class="fa fa-clock"></i></span>
+                <div><div class="fpc-label">Atención</div><div class="fpc-value">Lun – Vie · 7am – 7pm</div></div>
+              </div>
+            </div>
+            <div class="fp-ai-badge"><i class="fa fa-bolt"></i> Impulsado por IA</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="footer-bottom-bar">
+      <div class="container-ua">
+        <div class="fbb-inner">
+          <span>© 2025 <strong>Urban Alert</strong> · Todos los derechos reservados</span>
+          <div class="fbb-cities"><i class="fa fa-city"></i> Facatativá · Madrid · Mosquera</div>
+          <span class="fbb-made">Hecho con <i class="fa fa-heart" style="color:#e74c3c;"></i> en Colombia</span>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <style>
+    .footer-premium { background:#0a0a0a; color:rgba(255,255,255,.65); font-size:.875rem; margin-top:2rem; }
+    .footer-body { padding:4rem 0 2.5rem; border-bottom:1px solid rgba(255,255,255,.06); }
+    .footer-grid-main { display:grid; grid-template-columns:1.8fr 1fr 1fr 1.3fr; gap:3rem; }
+    .footer-logo { display:flex; align-items:center; gap:.7rem; margin-bottom:1rem; }
+    .footer-logo-icon { width:38px; height:38px; background:linear-gradient(135deg,var(--naranja),var(--naranja-dark)); border-radius:10px; display:flex; align-items:center; justify-content:center; font-size:1rem; color:#fff; box-shadow:0 4px 15px rgba(255,107,0,.4); }
+    .footer-logo-name { font-family:var(--font-display); font-size:1.3rem; font-weight:800; color:#fff; }
+    .footer-logo-name em { font-style:normal; color:var(--naranja); }
+    .footer-tagline { font-size:.84rem; line-height:1.75; max-width:260px; margin-bottom:1.25rem; }
+    .footer-cities-label { font-size:.7rem; font-weight:700; text-transform:uppercase; letter-spacing:.08em; color:rgba(255,255,255,.3); margin-bottom:.5rem; }
+    .footer-cities-pills { display:flex; flex-wrap:wrap; gap:.4rem; margin-bottom:1.4rem; }
+    .fp-pill { display:inline-flex; align-items:center; gap:.3rem; background:rgba(255,107,0,.12); border:1px solid rgba(255,107,0,.25); color:var(--naranja-light); padding:.2rem .65rem; border-radius:99px; font-size:.72rem; font-weight:600; }
+    .footer-social { display:flex; gap:.5rem; }
+    .fs-btn { width:36px; height:36px; border-radius:10px; display:flex; align-items:center; justify-content:center; font-size:.9rem; color:#fff !important; text-decoration:none !important; transition:transform .2s; }
+    .fs-btn:hover { transform:translateY(-3px); }
+    .fs-btn.wa { background:#25d366; box-shadow:0 4px 12px rgba(37,211,102,.3); }
+    .fs-btn.ig { background:linear-gradient(135deg,#f09433,#e6683c,#dc2743,#cc2366,#bc1888); }
+    .fs-btn.fb { background:#1877f2; }
+    .fs-btn.tw { background:#000; border:1px solid rgba(255,255,255,.15); }
+    .footer-col-title { font-size:.78rem; font-weight:700; text-transform:uppercase; letter-spacing:.08em; color:var(--naranja); margin-bottom:1.1rem; display:flex; align-items:center; gap:.45rem; }
+    .fp-links { list-style:none; padding:0; margin:0; }
+    .fp-links li { margin-bottom:.55rem; }
+    .fp-links a { color:rgba(255,255,255,.5); font-size:.84rem; text-decoration:none; display:flex; align-items:center; gap:.4rem; transition:color .2s, gap .2s; }
+    .fp-links a i { font-size:.6rem; color:rgba(255,107,0,.5); }
+    .fp-links a:hover { color:#fff; gap:.55rem; }
+    .fp-links a:hover i { color:var(--naranja); }
+    .fp-contact-list { display:flex; flex-direction:column; gap:.75rem; margin-bottom:1.25rem; }
+    .fp-contact-item { display:flex; align-items:center; gap:.75rem; text-decoration:none !important; color:rgba(255,255,255,.6) !important; transition:color .2s; }
+    a.fp-contact-item:hover { color:#fff !important; }
+    .fpc-icon { width:36px; height:36px; border-radius:9px; display:flex; align-items:center; justify-content:center; font-size:.95rem; flex-shrink:0; }
+    .fpc-icon.wa { background:rgba(37,211,102,.15); color:#25d366; }
+    .fpc-icon.em { background:rgba(255,107,0,.15); color:var(--naranja); }
+    .fpc-icon.lo { background:rgba(255,255,255,.08); color:rgba(255,255,255,.5); }
+    .fpc-label { font-size:.7rem; opacity:.5; text-transform:uppercase; letter-spacing:.05em; }
+    .fpc-value { font-size:.84rem; font-weight:600; color:#fff; }
+    .fp-ai-badge { display:inline-flex; align-items:center; gap:.4rem; background:rgba(255,107,0,.1); border:1px solid rgba(255,107,0,.2); color:var(--naranja); font-size:.75rem; font-weight:700; padding:.35rem .8rem; border-radius:99px; }
+    .footer-bottom-bar { padding:1.1rem 0; background:#050505; }
+    .fbb-inner { display:flex; align-items:center; justify-content:space-between; gap:1rem; flex-wrap:wrap; font-size:.78rem; }
+    .fbb-cities { color:rgba(255,255,255,.35); }
+    .fbb-cities i { color:var(--naranja); margin-right:.3rem; }
+    .fbb-made { color:rgba(255,255,255,.4); }
+    @media(max-width:900px){ .footer-grid-main{ grid-template-columns:1fr 1fr; gap:2rem; } .footer-col-brand{ grid-column:1/-1; } }
+    @media(max-width:580px){ .footer-grid-main{ grid-template-columns:1fr; } .fbb-inner{ flex-direction:column; text-align:center; } }
+  </style>
+
+</div>
+
+<script>
+function toggleDropdown(id) {
+  const el = document.getElementById(id);
+  el.classList.toggle('open');
+}
+document.addEventListener('click', function(e) {
+  if (!e.target.closest('.tc-user-wrap')) {
+    document.querySelectorAll('.tc-dropdown').forEach(d => d.classList.remove('open'));
+  }
+  if (!e.target.closest('.tc-bell-wrap')) {
+    document.getElementById('notifPanel')?.classList.remove('open');
+  }
+});
+setTimeout(() => {
+  document.querySelectorAll('.tc-flash').forEach(el => {
+    el.style.transition = 'opacity .4s';
+    el.style.opacity = '0';
+    setTimeout(() => el.remove(), 400);
+  });
+}, 4000);
+
+// ── Notificaciones ──────────────────────────────────────────
+const ICONOS_TIPO = { exito:'fa-circle-check', info:'fa-circle-info', advertencia:'fa-triangle-exclamation', error:'fa-circle-xmark' };
+let _notifCache = [];
+
+function toggleNotifPanel() {
+  const p = document.getElementById('notifPanel');
+  p.classList.toggle('open');
+  if (p.classList.contains('open')) cargarNotificaciones();
+}
+
+function cargarNotificaciones() {
+  fetch('/tecnico/notificaciones')
+    .then(r => r.json())
+    .then(data => {
+      _notifCache = data.notificaciones || [];
+      renderNotifs(_notifCache);
+      actualizarBadge(data.no_leidas || 0);
+    });
+}
+
+function renderNotifs(lista) {
+  const el = document.getElementById('notifList');
+  if (!lista.length) {
+    el.innerHTML = '<div class="tc-notif-empty"><i class="fa fa-bell-slash" style="font-size:1.4rem;margin-bottom:.5rem;display:block"></i>Sin notificaciones</div>';
+    return;
+  }
+  el.innerHTML = lista.map(n => `
+    <div class="tc-notif-item ${n.leida ? '' : 'unread'}" onclick="leerNotif(${n.id}, this)">
+      <div class="tc-notif-icon ${n.tipo}"><i class="fa ${ICONOS_TIPO[n.tipo]||'fa-bell'}"></i></div>
+      <div class="tc-notif-body">
+        <div class="tc-notif-ntitle">${n.titulo}</div>
+        <div class="tc-notif-msg">${n.mensaje}</div>
+        <div class="tc-notif-time"><i class="fa fa-clock" style="margin-right:.3rem"></i>${formatTime(n.creado_en)}</div>
+      </div>
+    </div>`).join('');
+}
+
+function formatTime(ts) {
+  if (!ts) return '';
+  const d = new Date(ts);
+  return d.toLocaleDateString('es-CO', {day:'2-digit',month:'short'}) + ' · ' + d.toLocaleTimeString('es-CO',{hour:'2-digit',minute:'2-digit'});
+}
+
+function leerNotif(id, el) {
+  if (el.classList.contains('unread')) {
+    fetch('/tecnico/notificaciones/leer', { method:'POST',
+      headers:{'Content-Type':'application/json'}, body: JSON.stringify({id}) })
+      .then(() => { el.classList.remove('unread'); cargarNotificaciones(); });
+  }
+}
+
+function marcarTodasLeidas() {
+  fetch('/tecnico/notificaciones/leer', { method:'POST',
+    headers:{'Content-Type':'application/json'}, body: JSON.stringify({}) })
+    .then(() => cargarNotificaciones());
+}
+
+function actualizarBadge(n) {
+  const badge = document.getElementById('bellBadge');
+  const btn   = document.getElementById('bellBtn');
+  if (n > 0) {
+    badge.style.display = 'flex';
+    badge.textContent = n > 99 ? '99+' : n;
+    btn.classList.add('has-notif');
+  } else {
+    badge.style.display = 'none';
+    btn.classList.remove('has-notif');
+  }
+}
+
+// Polling automático cada 30 s
+function pollNotificaciones() {
+  fetch('/tecnico/notificaciones')
+    .then(r => r.json())
+    .then(data => actualizarBadge(data.no_leidas || 0));
+}
+pollNotificaciones();
+setInterval(pollNotificaciones, 30000);
+
+// ── Toggle disponibilidad ──────────────────────────────────
+let _disponible = true;
+function toggleDisponible() {
+  _disponible = !_disponible;
+  const btn = document.getElementById('availBtn');
+  const txt = document.getElementById('availText');
+  btn.className = 'tc-avail-toggle ' + (_disponible ? 'avail' : 'unavail');
+  txt.textContent = _disponible ? 'Disponible' : 'No disponible';
+  fetch('/tecnico/disponibilidad', { method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({disponible: _disponible}) });
+}
+</script>
+{% block scripts %}{% endblock %}
+</body>
+</html>

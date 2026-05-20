@@ -1,0 +1,7 @@
+flask
+pymysql
+werkzeug
+gunicorn
+anthropic
+Pillow
+python-dotenv

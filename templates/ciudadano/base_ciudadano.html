@@ -1,0 +1,488 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}Mi Panel — Urban Alert{% endblock %}</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/urban-alert.css') }}">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <style>
+    .cu-wrap { display:flex; flex-direction:column; min-height:100vh; background:#0d0d0d; }
+
+    .cu-navbar {
+      height: 68px; flex-shrink: 0;
+      background: rgba(10,10,10,.97);
+      backdrop-filter: blur(20px);
+      border-bottom: 1px solid rgba(255,107,0,.14);
+      display: flex; align-items: center;
+      padding: 0 2rem; gap: 1.5rem;
+      position: sticky; top: 0; z-index: 100;
+    }
+    .cu-brand { display:flex; align-items:center; gap:6px; text-decoration:none; font-size:1.2rem; font-weight:800; color:#fff; letter-spacing:-.3px; }
+    .cu-brand-icon {
+      width: 38px; height: 38px; border-radius: 11px;
+      background: var(--naranja);
+      display: flex; align-items: center; justify-content: center;
+      color: #fff; font-size: 1.1rem;
+    }
+    .cu-brand-text {
+      font-family: var(--font-display); font-size: 1.2rem;
+      font-weight: 800; color: #fff; letter-spacing: -.02em;
+    }
+    .cu-brand-text span { color: var(--naranja); }
+
+    .cu-nav { display:flex; align-items:center; gap:.2rem; flex: 1; }
+    .cu-nav-link {
+      display: flex; align-items: center; gap: .45rem;
+      padding: .5rem .9rem;
+      color: rgba(255,255,255,.55);
+      font-size: .875rem; font-weight: 500;
+      text-decoration: none; border-radius: 9px;
+      transition: all .18s; white-space: nowrap;
+    }
+    .cu-nav-link:hover { color: #fff; background: rgba(255,255,255,.07); }
+    .cu-nav-link.active { color: var(--naranja); background: rgba(255,107,0,.1); }
+    .cu-nav-link i { font-size: .8rem; }
+
+    .cu-nav-right { display: flex; align-items: center; gap: .75rem; margin-left: auto; }
+    .cu-nav-cta {
+      display: flex; align-items: center; gap: .4rem;
+      padding: .5rem 1.1rem;
+      background: linear-gradient(135deg, var(--naranja), #e05500);
+      color: #fff !important; font-size: .83rem; font-weight: 700;
+      border-radius: 9px; text-decoration: none;
+      box-shadow: 0 4px 14px rgba(255,107,0,.3);
+      transition: opacity .15s, transform .15s; white-space: nowrap;
+    }
+    .cu-nav-cta:hover { opacity: .88; transform: translateY(-1px); }
+
+    /* Dropdown usuario — abre con JS click, no hover */
+    .cu-user-wrap { position: relative; }
+    .cu-avatar-btn {
+      width: 36px; height: 36px; border-radius: 50%;
+      background: var(--naranja);
+      display: flex; align-items: center; justify-content: center;
+      color: #fff; font-weight: 800; font-size: .88rem;
+      cursor: pointer; border: none; flex-shrink: 0;
+      transition: box-shadow .18s;
+    }
+    .cu-avatar-btn:hover { box-shadow: 0 0 0 3px rgba(255,107,0,.3); }
+    .cu-dropdown {
+      display: none; position: absolute; top: calc(100% + .6rem); right: 0;
+      background: #1c1c1c; border: 1px solid rgba(255,255,255,.12);
+      border-radius: 14px; padding: .5rem; min-width: 200px;
+      box-shadow: 0 16px 48px rgba(0,0,0,.6); z-index: 999;
+      animation: fadeUp .2s ease;
+    }
+    .cu-dropdown.open { display: block; }
+    .cu-dropdown-info {
+      padding: .75rem .9rem .6rem;
+      border-bottom: 1px solid rgba(255,255,255,.08);
+      margin-bottom: .4rem;
+    }
+    .cu-dropdown-name { font-size: .88rem; font-weight: 700; color: #fff; }
+    .cu-dropdown-role { font-size: .72rem; color: var(--naranja); font-weight: 600; margin-top: .1rem; }
+    .cu-dropdown-item {
+      display: flex; align-items: center; gap: .55rem;
+      padding: .55rem .9rem; border-radius: 9px;
+      color: rgba(255,255,255,.55); font-size: .83rem; font-weight: 500;
+      text-decoration: none; transition: all .15s; cursor: pointer;
+      border: none; background: none; width: 100%; text-align: left;
+    }
+    .cu-dropdown-item:hover { color: #fff; background: rgba(255,255,255,.07); }
+    .cu-dropdown-item.danger:hover { color: #e74c3c; background: rgba(231,76,60,.1); }
+    .cu-dropdown-item i { width: 16px; text-align: center; }
+
+    .cu-content { flex: 1; padding: 2rem; }
+
+    .cu-flash-wrap { position: fixed; bottom: 1.5rem; right: 1.5rem; z-index: 9999; min-width: 300px; }
+    .cu-flash {
+      padding: .9rem 1.2rem; border-radius: 12px;
+      font-size: .875rem; font-weight: 600;
+      display: flex; align-items: center; gap: .6rem;
+      margin-bottom: .5rem; animation: fadeUp .35s ease both;
+    }
+    .cu-flash.success { background: rgba(46,204,113,.12); border:1px solid rgba(46,204,113,.3); color: #2ecc71; }
+    .cu-flash.danger  { background: rgba(231,76,60,.12);  border:1px solid rgba(231,76,60,.3);  color: #e74c3c; }
+    .cu-flash.warning { background: rgba(255,107,0,.12);  border:1px solid rgba(255,107,0,.3);  color: var(--naranja); }
+    .cu-flash.info    { background: rgba(52,152,219,.12); border:1px solid rgba(52,152,219,.3); color: #3498db; }
+
+    /* ── Campanita Notificaciones Ciudadano ── */
+    .cu-bell-wrap { position: relative; }
+    .cu-bell-btn {
+      width: 36px; height: 36px; border-radius: 10px;
+      background: transparent; border: 1.5px solid rgba(255,255,255,.12);
+      color: rgba(255,255,255,.5); font-size: .9rem;
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer; transition: all .18s; flex-shrink: 0;
+    }
+    .cu-bell-btn:hover { color: #fff; background: rgba(255,255,255,.12); }
+    .cu-bell-btn.has-notif { color: var(--naranja); border-color: rgba(255,107,0,.35); }
+    .cu-bell-badge {
+      position: absolute; top: -5px; right: -5px;
+      min-width: 17px; height: 17px; border-radius: 99px;
+      background: var(--naranja); color: #fff; font-size: .62rem; font-weight: 800;
+      display: flex; align-items: center; justify-content: center;
+      padding: 0 4px; pointer-events: none; border: 2px solid #0a0a0a;
+    }
+    .cu-notif-panel {
+      display: none; position: absolute; top: calc(100% + .65rem); right: 0;
+      width: 320px; background: #1a1a1a; border: 1px solid rgba(255,255,255,.1);
+      border-radius: 16px; box-shadow: 0 20px 60px rgba(0,0,0,.7); z-index: 9999;
+      overflow: hidden; animation: fadeUp .2s ease;
+    }
+    .cu-notif-panel.open { display: block; }
+    .cu-notif-header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: .75rem 1rem; border-bottom: 1px solid rgba(255,255,255,.07);
+    }
+    .cu-notif-title { font-size: .83rem; font-weight: 700; color: #fff; }
+    .cu-notif-mark { font-size: .72rem; color: var(--naranja); cursor: pointer; background: none; border: none; }
+    .cu-notif-mark:hover { text-decoration: underline; }
+    .cu-notif-list { max-height: 340px; overflow-y: auto; }
+    .cu-notif-item {
+      display: flex; align-items: flex-start; gap: .75rem;
+      padding: .75rem 1rem; cursor: pointer; transition: background .15s;
+      border-bottom: 1px solid rgba(255,255,255,.04);
+    }
+    .cu-notif-item:hover { background: rgba(255,255,255,.04); }
+    .cu-notif-item.unread { background: rgba(255,107,0,.05); }
+    .cu-notif-icon {
+      width: 32px; height: 32px; border-radius: 9px; flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center; font-size: .8rem;
+    }
+    .cu-notif-icon.exito   { background: rgba(46,204,113,.15); color: #2ecc71; }
+    .cu-notif-icon.info    { background: rgba(52,152,219,.15); color: #3498db; }
+    .cu-notif-icon.advertencia { background: rgba(255,107,0,.15); color: var(--naranja); }
+    .cu-notif-icon.error   { background: rgba(231,76,60,.15); color: #e74c3c; }
+    .cu-notif-body { flex: 1; min-width: 0; }
+    .cu-notif-ntitle { font-size: .8rem; font-weight: 700; color: #fff; margin-bottom: .15rem; }
+    .cu-notif-msg { font-size: .75rem; color: rgba(255,255,255,.5); line-height: 1.4; }
+    .cu-notif-time { font-size: .68rem; color: rgba(255,255,255,.3); margin-top: .25rem; }
+    .cu-notif-empty { text-align: center; padding: 2rem 1rem; color: rgba(255,255,255,.3); font-size: .83rem; }
+    .cu-notif-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--naranja); flex-shrink: 0; margin-top: .35rem; }
+
+    @media (max-width: 768px) {
+      .cu-navbar { padding: 0 1rem; gap: .75rem; }
+      .cu-nav { display: none; }
+      .cu-content { padding: 1rem; }
+    }
+  </style>
+  {% block head %}{% endblock %}
+</head>
+<body>
+<div class="cu-wrap">
+
+  <nav class="cu-navbar">
+    <a href="{{ url_for('ciudadano_dashboard') }}" class="cu-brand">
+      <img src="{{ url_for('static', filename='images/logo.png') }}" alt="UrbanAlert" style="height:64px;width:auto;object-fit:contain;filter:drop-shadow(0 0 10px rgba(255,107,0,0.7));">Urban<span>Alert</span>
+    </a>
+
+    <div class="cu-nav">
+      <a href="{{ url_for('ciudadano_dashboard') }}"
+         class="cu-nav-link {% if request.endpoint == 'ciudadano_dashboard' %}active{% endif %}">
+        <i class="fa fa-house"></i> Inicio
+      </a>
+      <a href="{{ url_for('mis_reportes') }}"
+         class="cu-nav-link {% if request.endpoint == 'mis_reportes' %}active{% endif %}">
+        <i class="fa fa-flag"></i> Mis Reportes
+      </a>
+      <a href="{{ url_for('mapa') }}"
+         class="cu-nav-link {% if request.endpoint == 'mapa' %}active{% endif %}">
+        <i class="fa fa-map"></i> Mapa
+      </a>
+    </div>
+
+    <div class="cu-nav-right">
+      <!-- Campanita de notificaciones -->
+      <div class="cu-bell-wrap">
+        <button class="cu-bell-btn" id="cuBellBtn" onclick="toggleCuNotifPanel()" title="Notificaciones">
+          <i class="fa fa-bell"></i>
+        </button>
+        <span class="cu-bell-badge" id="cuBellBadge" style="display:none">0</span>
+        <div class="cu-notif-panel" id="cuNotifPanel">
+          <div class="cu-notif-header">
+            <span class="cu-notif-title"><i class="fa fa-bell" style="color:var(--naranja);margin-right:.4rem"></i>Notificaciones</span>
+            <button class="cu-notif-mark" onclick="cuMarcarTodasLeidas()">Marcar todas leídas</button>
+          </div>
+          <div class="cu-notif-list" id="cuNotifList">
+            <div class="cu-notif-empty"><i class="fa fa-bell-slash" style="font-size:1.4rem;margin-bottom:.5rem;display:block"></i>Sin notificaciones</div>
+          </div>
+        </div>
+      </div>
+
+      <a href="{{ url_for('nuevo_reporte') }}" class="cu-nav-cta">
+        <i class="fa fa-plus"></i> Nuevo reporte
+      </a>
+      <div class="cu-user-wrap">
+        <button class="cu-avatar-btn" id="cuUserBtn" onclick="toggleDropdown('cuDrop')">
+          {{ session.nombre[0]|upper if session.nombre else 'U' }}
+        </button>
+        <div class="cu-dropdown" id="cuDrop">
+          <div class="cu-dropdown-info">
+            <div class="cu-dropdown-name">{{ session.nombre }}</div>
+            <div class="cu-dropdown-role">Ciudadano</div>
+          </div>
+          <a href="{{ url_for('mi_perfil') }}" class="cu-dropdown-item">
+            <i class="fa fa-user"></i> Mi perfil
+          </a>
+          <a href="{{ url_for('logout') }}" class="cu-dropdown-item danger">
+            <i class="fa fa-right-from-bracket"></i> Cerrar sesión
+          </a>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+    <div class="cu-flash-wrap">
+      {% for cat, msg in messages %}
+      <div class="cu-flash {{ cat }}"><i class="fa fa-circle-check"></i> {{ msg }}</div>
+      {% endfor %}
+    </div>
+    {% endif %}
+  {% endwith %}
+
+  <div class="cu-content">
+    {% block content %}{% endblock %}
+  </div>
+
+  <!-- Footer Premium Ciudadano -->
+  <footer class="footer-premium">
+    <div class="footer-body">
+      <div class="container-ua">
+        <div class="footer-grid-main">
+
+          <!-- Marca -->
+          <div class="footer-col-brand">
+            <div class="footer-logo">
+              <div class="footer-logo-icon"><i class="fa-solid fa-triangle-exclamation"></i></div>
+              <span class="footer-logo-name">Urban<em>Alert</em></span>
+            </div>
+            <p class="footer-tagline">Plataforma inteligente para detectar, reportar y gestionar problemas urbanos con Inteligencia Artificial.</p>
+            <div class="footer-cities-label">Ciudades activas</div>
+            <div class="footer-cities-pills">
+              <span class="fp-pill"><i class="fa fa-location-dot"></i> Facatativá</span>
+              <span class="fp-pill"><i class="fa fa-location-dot"></i> Madrid</span>
+              <span class="fp-pill"><i class="fa fa-location-dot"></i> Mosquera</span>
+            </div>
+            <div class="footer-social">
+              <a href="https://wa.me/573025554151" target="_blank" rel="noopener" class="fs-btn wa" title="WhatsApp"><i class="fa-brands fa-whatsapp"></i></a>
+              <a href="#" class="fs-btn ig" title="Instagram"><i class="fa-brands fa-instagram"></i></a>
+              <a href="#" class="fs-btn fb" title="Facebook"><i class="fa-brands fa-facebook-f"></i></a>
+              <a href="#" class="fs-btn tw" title="X / Twitter"><i class="fa-brands fa-x-twitter"></i></a>
+            </div>
+          </div>
+
+          <!-- Plataforma -->
+          <div class="footer-col">
+            <div class="footer-col-title"><i class="fa fa-layer-group"></i> Plataforma</div>
+            <ul class="fp-links">
+              <li><a href="{{ url_for('mapa') }}"><i class="fa fa-chevron-right"></i> Mapa de reportes</a></li>
+              <li><a href="{{ url_for('nuevo_reporte') }}"><i class="fa fa-chevron-right"></i> Crear reporte</a></li>
+              <li><a href="{{ url_for('mis_reportes') }}"><i class="fa fa-chevron-right"></i> Mis reportes</a></li>
+              <li><a href="{{ url_for('ciudadano_dashboard') }}"><i class="fa fa-chevron-right"></i> Mi panel</a></li>
+            </ul>
+          </div>
+
+          <!-- Tecnología -->
+          <div class="footer-col">
+            <div class="footer-col-title"><i class="fa fa-microchip"></i> Tecnología</div>
+            <ul class="fp-links">
+              <li><a href="#"><i class="fa fa-chevron-right"></i> IA con Claude Vision</a></li>
+              <li><a href="#"><i class="fa fa-chevron-right"></i> Mapa interactivo</a></li>
+              <li><a href="#"><i class="fa fa-chevron-right"></i> Alertas en tiempo real</a></li>
+              <li><a href="#"><i class="fa fa-chevron-right"></i> Análisis predictivo</a></li>
+            </ul>
+          </div>
+
+          <!-- Contacto -->
+          <div class="footer-col">
+            <div class="footer-col-title"><i class="fa fa-headset"></i> Contacto rápido</div>
+            <div class="fp-contact-list">
+              <a href="https://wa.me/573025554151" target="_blank" rel="noopener" class="fp-contact-item">
+                <span class="fpc-icon wa"><i class="fa-brands fa-whatsapp"></i></span>
+                <div><div class="fpc-label">WhatsApp</div><div class="fpc-value">+57 302 555 4151</div></div>
+              </a>
+              <a href="mailto:contacto@urbanalert.co" class="fp-contact-item">
+                <span class="fpc-icon em"><i class="fa fa-envelope"></i></span>
+                <div><div class="fpc-label">Correo</div><div class="fpc-value">contacto@urbanalert.co</div></div>
+              </a>
+              <div class="fp-contact-item" style="cursor:default;">
+                <span class="fpc-icon lo"><i class="fa fa-clock"></i></span>
+                <div><div class="fpc-label">Atención</div><div class="fpc-value">Lun – Vie · 7am – 7pm</div></div>
+              </div>
+            </div>
+            <div class="fp-ai-badge"><i class="fa fa-bolt"></i> Impulsado por Inteligencia Artificial</div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+    <div class="footer-bottom-bar">
+      <div class="container-ua">
+        <div class="fbb-inner">
+          <span>© 2025 <strong>Urban Alert</strong> · Todos los derechos reservados</span>
+          <div class="fbb-cities"><i class="fa fa-city"></i> Facatativá · Madrid · Mosquera</div>
+          <span class="fbb-made">Hecho con <i class="fa fa-heart" style="color:#e74c3c;"></i> en Colombia</span>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <style>
+    .footer-premium { background:#0a0a0a; color:rgba(255,255,255,.65); font-size:.875rem; margin-top:3rem; }
+    .footer-body { padding:4rem 0 2.5rem; border-bottom:1px solid rgba(255,255,255,.06); }
+    .footer-grid-main { display:grid; grid-template-columns:1.8fr 1fr 1fr 1.3fr; gap:3rem; }
+    .footer-logo { display:flex; align-items:center; gap:.7rem; margin-bottom:1rem; }
+    .footer-logo-icon { width:38px; height:38px; background:linear-gradient(135deg,var(--naranja),var(--naranja-dark)); border-radius:10px; display:flex; align-items:center; justify-content:center; font-size:1rem; color:#fff; box-shadow:0 4px 15px rgba(255,107,0,.4); }
+    .footer-logo-name { font-family:var(--font-display); font-size:1.3rem; font-weight:800; color:#fff; }
+    .footer-logo-name em { font-style:normal; color:var(--naranja); }
+    .footer-tagline { font-size:.84rem; line-height:1.75; max-width:260px; margin-bottom:1.25rem; }
+    .footer-cities-label { font-size:.7rem; font-weight:700; text-transform:uppercase; letter-spacing:.08em; color:rgba(255,255,255,.3); margin-bottom:.5rem; }
+    .footer-cities-pills { display:flex; flex-wrap:wrap; gap:.4rem; margin-bottom:1.4rem; }
+    .fp-pill { display:inline-flex; align-items:center; gap:.3rem; background:rgba(255,107,0,.12); border:1px solid rgba(255,107,0,.25); color:var(--naranja-light); padding:.2rem .65rem; border-radius:99px; font-size:.72rem; font-weight:600; }
+    .footer-social { display:flex; gap:.5rem; }
+    .fs-btn { width:36px; height:36px; border-radius:10px; display:flex; align-items:center; justify-content:center; font-size:.9rem; color:#fff !important; text-decoration:none !important; transition:transform .2s; }
+    .fs-btn:hover { transform:translateY(-3px); }
+    .fs-btn.wa { background:#25d366; box-shadow:0 4px 12px rgba(37,211,102,.3); }
+    .fs-btn.ig { background:linear-gradient(135deg,#f09433,#e6683c,#dc2743,#cc2366,#bc1888); }
+    .fs-btn.fb { background:#1877f2; }
+    .fs-btn.tw { background:#000; border:1px solid rgba(255,255,255,.15); }
+    .footer-col-title { font-size:.78rem; font-weight:700; text-transform:uppercase; letter-spacing:.08em; color:var(--naranja); margin-bottom:1.1rem; display:flex; align-items:center; gap:.45rem; }
+    .fp-links { list-style:none; padding:0; margin:0; }
+    .fp-links li { margin-bottom:.55rem; }
+    .fp-links a { color:rgba(255,255,255,.5); font-size:.84rem; text-decoration:none; display:flex; align-items:center; gap:.4rem; transition:color .2s, gap .2s; }
+    .fp-links a i { font-size:.6rem; color:rgba(255,107,0,.5); transition:color .2s; }
+    .fp-links a:hover { color:#fff; gap:.55rem; }
+    .fp-links a:hover i { color:var(--naranja); }
+    .fp-contact-list { display:flex; flex-direction:column; gap:.75rem; margin-bottom:1.25rem; }
+    .fp-contact-item { display:flex; align-items:center; gap:.75rem; text-decoration:none !important; color:rgba(255,255,255,.6) !important; transition:color .2s; }
+    a.fp-contact-item:hover { color:#fff !important; }
+    .fpc-icon { width:36px; height:36px; border-radius:9px; display:flex; align-items:center; justify-content:center; font-size:.95rem; flex-shrink:0; }
+    .fpc-icon.wa { background:rgba(37,211,102,.15); color:#25d366; }
+    .fpc-icon.em { background:rgba(255,107,0,.15); color:var(--naranja); }
+    .fpc-icon.lo { background:rgba(255,255,255,.08); color:rgba(255,255,255,.5); }
+    .fpc-label { font-size:.7rem; opacity:.5; text-transform:uppercase; letter-spacing:.05em; }
+    .fpc-value { font-size:.84rem; font-weight:600; color:#fff; }
+    .fp-ai-badge { display:inline-flex; align-items:center; gap:.4rem; background:rgba(255,107,0,.1); border:1px solid rgba(255,107,0,.2); color:var(--naranja); font-size:.75rem; font-weight:700; padding:.35rem .8rem; border-radius:99px; }
+    .footer-bottom-bar { padding:1.1rem 0; background:#050505; }
+    .fbb-inner { display:flex; align-items:center; justify-content:space-between; gap:1rem; flex-wrap:wrap; font-size:.78rem; }
+    .fbb-cities { color:rgba(255,255,255,.35); }
+    .fbb-cities i { color:var(--naranja); margin-right:.3rem; }
+    .fbb-made { color:rgba(255,255,255,.4); }
+    @media(max-width:900px){ .footer-grid-main{ grid-template-columns:1fr 1fr; gap:2rem; } .footer-col-brand{ grid-column:1/-1; } }
+    @media(max-width:580px){ .footer-grid-main{ grid-template-columns:1fr; } .fbb-inner{ flex-direction:column; text-align:center; } }
+  </style>
+</div>
+
+<script>
+function toggleDropdown(id) {
+  const el = document.getElementById(id);
+  el.classList.toggle('open');
+}
+// Cerrar dropdown y panel al hacer click fuera
+document.addEventListener('click', function(e) {
+  if (!e.target.closest('.cu-user-wrap')) {
+    document.querySelectorAll('.cu-dropdown').forEach(d => d.classList.remove('open'));
+  }
+  if (!e.target.closest('.cu-bell-wrap')) {
+    document.getElementById('cuNotifPanel')?.classList.remove('open');
+  }
+});
+
+// ── Notificaciones Ciudadano ──────────────────────────────
+const CU_ICONOS_TIPO = { exito:'fa-circle-check', info:'fa-circle-info', advertencia:'fa-triangle-exclamation', error:'fa-circle-xmark' };
+let _cuNotifCache = [];
+
+function toggleCuNotifPanel() {
+  const p = document.getElementById('cuNotifPanel');
+  p.classList.toggle('open');
+  if (p.classList.contains('open')) cuCargarNotificaciones();
+}
+
+function cuCargarNotificaciones() {
+  fetch('/ciudadano/notificaciones')
+    .then(r => r.json())
+    .then(data => {
+      _cuNotifCache = data.notificaciones || [];
+      cuRenderNotifs(_cuNotifCache);
+      cuActualizarBadge(data.no_leidas || 0);
+    })
+    .catch(() => {});
+}
+
+function cuRenderNotifs(lista) {
+  const el = document.getElementById('cuNotifList');
+  if (!lista.length) {
+    el.innerHTML = '<div class="cu-notif-empty"><i class="fa fa-bell-slash" style="font-size:1.4rem;margin-bottom:.5rem;display:block"></i>Sin notificaciones</div>';
+    return;
+  }
+  el.innerHTML = lista.map(n => `
+    <div class="cu-notif-item ${n.leida ? '' : 'unread'}" onclick="cuLeerNotif(${n.id}, this)">
+      <div class="cu-notif-icon ${n.tipo}"><i class="fa ${CU_ICONOS_TIPO[n.tipo]||'fa-bell'}"></i></div>
+      <div class="cu-notif-body">
+        <div class="cu-notif-ntitle">${n.titulo}</div>
+        <div class="cu-notif-msg">${n.mensaje}</div>
+        <div class="cu-notif-time"><i class="fa fa-clock" style="margin-right:.3rem"></i>${cuFormatTime(n.creado_en)}</div>
+      </div>
+      ${!n.leida ? '<div class="cu-notif-dot"></div>' : ''}
+    </div>`).join('');
+}
+
+function cuFormatTime(ts) {
+  if (!ts) return '';
+  const d = new Date(ts);
+  return d.toLocaleDateString('es-CO', {day:'2-digit',month:'short'}) + ' · ' + d.toLocaleTimeString('es-CO',{hour:'2-digit',minute:'2-digit'});
+}
+
+function cuLeerNotif(id, el) {
+  if (el.classList.contains('unread')) {
+    fetch('/ciudadano/notificaciones/leer', { method:'POST',
+      headers:{'Content-Type':'application/json'}, body: JSON.stringify({id}) })
+      .then(() => { el.classList.remove('unread'); el.querySelector('.cu-notif-dot')?.remove(); cuCargarNotificaciones(); })
+      .catch(() => {});
+  }
+}
+
+function cuMarcarTodasLeidas() {
+  fetch('/ciudadano/notificaciones/leer', { method:'POST',
+    headers:{'Content-Type':'application/json'}, body: JSON.stringify({}) })
+    .then(() => cuCargarNotificaciones())
+    .catch(() => {});
+}
+
+function cuActualizarBadge(n) {
+  const badge = document.getElementById('cuBellBadge');
+  const btn   = document.getElementById('cuBellBtn');
+  if (n > 0) {
+    badge.style.display = 'flex';
+    badge.textContent = n > 99 ? '99+' : n;
+    btn.classList.add('has-notif');
+  } else {
+    badge.style.display = 'none';
+    btn.classList.remove('has-notif');
+  }
+}
+
+// Polling automático cada 30 s
+function cuPollNotificaciones() {
+  fetch('/ciudadano/notificaciones')
+    .then(r => r.json())
+    .then(data => cuActualizarBadge(data.no_leidas || 0))
+    .catch(() => {});
+}
+cuPollNotificaciones();
+setInterval(cuPollNotificaciones, 30000);
+setTimeout(() => {
+  document.querySelectorAll('.cu-flash').forEach(el => {
+    el.style.transition = 'opacity .4s';
+    el.style.opacity = '0';
+    setTimeout(() => el.remove(), 400);
+  });
+}, 4000);
+</script>
+{% block scripts %}{% endblock %}
+</body>
+</html>

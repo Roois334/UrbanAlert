@@ -1,0 +1,393 @@
+{% extends 'admin/base_admin.html' %}
+{% block title %}Crear Técnico — Urban Alert{% endblock %}
+
+{% block head %}
+<style>
+  .ct-wrap {
+    max-width: 720px;
+    margin: 2.5rem auto;
+    padding: 0 1.5rem;
+    font-family: 'Inter', sans-serif;
+  }
+
+  /* Encabezado */
+  .ct-header {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 2rem;
+  }
+  .ct-back {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 38px; height: 38px;
+    border-radius: 10px;
+    background: rgba(255,255,255,.06);
+    border: 1px solid rgba(255,255,255,.1);
+    color: rgba(255,255,255,.55);
+    text-decoration: none;
+    font-size: .9rem;
+    transition: all .2s;
+    flex-shrink: 0;
+  }
+  .ct-back:hover { background: rgba(255,107,0,.12); border-color: rgba(255,107,0,.35); color: #ff6b00; }
+  .ct-header-text h1 {
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-size: 1.5rem;
+    font-weight: 800;
+    color: #fff;
+    margin: 0 0 .15rem;
+  }
+  .ct-header-text p {
+    font-size: .82rem;
+    color: rgba(255,255,255,.4);
+    margin: 0;
+  }
+
+  /* Tarjeta */
+  .ct-card {
+    background: rgba(255,255,255,.03);
+    border: 1px solid rgba(255,255,255,.08);
+    border-radius: 18px;
+    padding: 2rem;
+    margin-bottom: 1.5rem;
+  }
+  .ct-card-title {
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-size: .7rem;
+    font-weight: 800;
+    color: rgba(255,107,0,.8);
+    text-transform: uppercase;
+    letter-spacing: .1em;
+    margin-bottom: 1.25rem;
+    display: flex;
+    align-items: center;
+    gap: .4rem;
+  }
+
+  /* Grid de campos */
+  .ct-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+  .ct-grid.full { grid-template-columns: 1fr; }
+  @media (max-width: 580px) { .ct-grid { grid-template-columns: 1fr; } }
+
+  /* Campo */
+  .ct-field { display: flex; flex-direction: column; gap: .4rem; }
+  .ct-label {
+    font-size: .75rem;
+    font-weight: 600;
+    color: rgba(255,255,255,.55);
+    letter-spacing: .02em;
+  }
+  .ct-label span.req { color: #ff6b00; margin-left: 2px; }
+  .ct-input, .ct-select, .ct-textarea {
+    background: rgba(255,255,255,.05);
+    border: 1px solid rgba(255,255,255,.1);
+    border-radius: 10px;
+    padding: .6rem .85rem;
+    color: #fff;
+    font-size: .86rem;
+    font-family: 'Inter', sans-serif;
+    outline: none;
+    transition: border-color .2s, background .2s;
+    width: 100%;
+    box-sizing: border-box;
+  }
+  .ct-input::placeholder { color: rgba(255,255,255,.22); }
+  .ct-input:focus, .ct-select:focus, .ct-textarea:focus {
+    border-color: rgba(255,107,0,.5);
+    background: rgba(255,107,0,.05);
+  }
+  .ct-select { -webkit-appearance: none; appearance: none; cursor: pointer;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 10'%3E%3Cpath fill='%23777' d='M0 0l8 10 8-10z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat; background-position: right .85rem center; background-size: 10px;
+    padding-right: 2.5rem;
+  }
+  .ct-select option { background: #1a1a1a; }
+  .ct-textarea { resize: vertical; min-height: 80px; line-height: 1.5; }
+
+  /* Toggle contraseña */
+  .pw-wrap { position: relative; }
+  .pw-wrap .ct-input { padding-right: 2.8rem; }
+  .pw-toggle {
+    position: absolute;
+    right: .75rem; top: 50%;
+    transform: translateY(-50%);
+    background: none; border: none;
+    color: rgba(255,255,255,.35);
+    cursor: pointer; font-size: .9rem;
+    padding: 0; line-height: 1;
+    transition: color .2s;
+  }
+  .pw-toggle:hover { color: #ff6b00; }
+
+  /* Indicador fuerza contraseña */
+  .pw-strength { margin-top: .35rem; }
+  .pw-strength-bar {
+    height: 3px;
+    border-radius: 2px;
+    background: rgba(255,255,255,.08);
+    overflow: hidden;
+    margin-bottom: .25rem;
+  }
+  .pw-strength-fill {
+    height: 100%;
+    border-radius: 2px;
+    width: 0%;
+    transition: width .3s, background .3s;
+  }
+  .pw-strength-label { font-size: .7rem; color: rgba(255,255,255,.35); }
+
+  /* Nota informativa */
+  .ct-info {
+    background: rgba(52,152,219,.08);
+    border: 1px solid rgba(52,152,219,.2);
+    border-radius: 10px;
+    padding: .65rem .9rem;
+    font-size: .78rem;
+    color: rgba(52,152,219,.9);
+    display: flex;
+    align-items: flex-start;
+    gap: .5rem;
+    margin-top: .75rem;
+  }
+  .ct-info i { margin-top: .05rem; flex-shrink: 0; }
+
+  /* Botones */
+  .ct-actions {
+    display: flex;
+    gap: .75rem;
+    justify-content: flex-end;
+    margin-top: 1.5rem;
+  }
+  .btn-cancel {
+    padding: .6rem 1.4rem;
+    border-radius: 10px;
+    background: rgba(255,255,255,.06);
+    border: 1px solid rgba(255,255,255,.1);
+    color: rgba(255,255,255,.6);
+    font-size: .85rem;
+    font-weight: 600;
+    cursor: pointer;
+    text-decoration: none;
+    transition: all .2s;
+    font-family: 'Inter', sans-serif;
+  }
+  .btn-cancel:hover { background: rgba(255,255,255,.1); color: #fff; }
+  .btn-submit {
+    padding: .6rem 1.8rem;
+    border-radius: 10px;
+    background: linear-gradient(135deg, #ff6b00, #e05500);
+    border: none;
+    color: #fff;
+    font-size: .85rem;
+    font-weight: 700;
+    cursor: pointer;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    transition: opacity .2s, transform .15s;
+    display: flex;
+    align-items: center;
+    gap: .5rem;
+  }
+  .btn-submit:hover { opacity: .9; transform: translateY(-1px); }
+  .btn-submit:active { transform: translateY(0); }
+  .btn-submit:disabled { opacity: .5; cursor: not-allowed; transform: none; }
+
+  /* Divider */
+  .ct-divider { height: 1px; background: rgba(255,255,255,.07); margin: 1.25rem 0; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="ct-wrap">
+
+  <!-- Encabezado -->
+  <div class="ct-header">
+    <a href="{{ url_for('admin_usuarios', tab='tecnicos') }}" class="ct-back">
+      <i class="fa fa-arrow-left"></i>
+    </a>
+    <div class="ct-header-text">
+      <h1><i class="fa fa-wrench" style="color:#ff6b00;font-size:1.2rem;margin-right:.4rem;"></i>Crear nuevo técnico</h1>
+      <p>Completa la información para registrar el técnico en el sistema</p>
+    </div>
+  </div>
+
+  <form method="POST" action="{{ url_for('admin_crear_tecnico') }}" id="formTecnico">
+
+    <!-- ── Información personal ── -->
+    <div class="ct-card">
+      <div class="ct-card-title"><i class="fa fa-user"></i> Información personal</div>
+
+      <div class="ct-grid">
+        <div class="ct-field">
+          <label class="ct-label" for="nombre">Nombre <span class="req">*</span></label>
+          <input class="ct-input" type="text" id="nombre" name="nombre"
+                 value="{{ form.get('nombre', '') }}"
+                 placeholder="Ej. Carlos" required autocomplete="off">
+        </div>
+        <div class="ct-field">
+          <label class="ct-label" for="apellido">Apellido <span class="req">*</span></label>
+          <input class="ct-input" type="text" id="apellido" name="apellido"
+                 value="{{ form.get('apellido', '') }}"
+                 placeholder="Ej. Ramírez" required autocomplete="off">
+        </div>
+      </div>
+
+      <div class="ct-divider"></div>
+
+      <div class="ct-grid">
+        <div class="ct-field">
+          <label class="ct-label" for="email">Correo electrónico <span class="req">*</span></label>
+          <input class="ct-input" type="email" id="email" name="email"
+                 value="{{ form.get('email', '') }}"
+                 placeholder="correo@ejemplo.com" required autocomplete="off">
+        </div>
+        <div class="ct-field">
+          <label class="ct-label" for="telefono">Teléfono</label>
+          <input class="ct-input" type="tel" id="telefono" name="telefono"
+                 value="{{ form.get('telefono', '') }}"
+                 placeholder="Ej. 3001234567" maxlength="20">
+        </div>
+      </div>
+
+      <div class="ct-divider"></div>
+
+      <div class="ct-grid full">
+        <div class="ct-field">
+          <label class="ct-label" for="ciudad">Ciudad base <span class="req">*</span></label>
+          <select class="ct-select" id="ciudad" name="ciudad" required>
+            <option value="Facatativá" {% if form.get('ciudad','Facatativá')=='Facatativá' %}selected{% endif %}>Facatativá</option>
+            <option value="Madrid"     {% if form.get('ciudad')=='Madrid' %}selected{% endif %}>Madrid</option>
+            <option value="Mosquera"   {% if form.get('ciudad')=='Mosquera' %}selected{% endif %}>Mosquera</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Acceso al sistema ── -->
+    <div class="ct-card">
+      <div class="ct-card-title"><i class="fa fa-lock"></i> Acceso al sistema</div>
+
+      <div class="ct-grid full">
+        <div class="ct-field">
+          <label class="ct-label" for="password">Contraseña <span class="req">*</span></label>
+          <div class="pw-wrap">
+            <input class="ct-input" type="password" id="password" name="password"
+                   placeholder="Mínimo 6 caracteres" required minlength="6"
+                   oninput="checkStrength(this.value)">
+            <button type="button" class="pw-toggle" onclick="togglePw()" id="pwToggleBtn">
+              <i class="fa fa-eye" id="pwIcon"></i>
+            </button>
+          </div>
+          <div class="pw-strength">
+            <div class="pw-strength-bar">
+              <div class="pw-strength-fill" id="strengthFill"></div>
+            </div>
+            <span class="pw-strength-label" id="strengthLabel">Escribe una contraseña</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="ct-info">
+        <i class="fa fa-circle-info"></i>
+        <span>El técnico podrá cambiar su contraseña desde su perfil una vez que inicie sesión por primera vez.</span>
+      </div>
+    </div>
+
+    <!-- ── Perfil técnico ── -->
+    <div class="ct-card">
+      <div class="ct-card-title"><i class="fa fa-hard-hat"></i> Perfil técnico</div>
+
+      <div class="ct-grid full">
+        <div class="ct-field">
+          <label class="ct-label" for="especialidad">Especialidad</label>
+          <input class="ct-input" type="text" id="especialidad" name="especialidad"
+                 value="{{ form.get('especialidad', '') }}"
+                 placeholder="Ej. Infraestructura vial: pavimentación y bacheo"
+                 maxlength="150">
+        </div>
+      </div>
+
+      <div class="ct-divider"></div>
+
+      <div class="ct-grid full">
+        <div class="ct-field">
+          <label class="ct-label" for="zona_cobertura">Zona de cobertura</label>
+          <select class="ct-select" id="zona_cobertura" name="zona_cobertura">
+            <option value="Todas"     {% if form.get('zona_cobertura','Todas')=='Todas' %}selected{% endif %}>Todas las ciudades</option>
+            <option value="Facatativá" {% if form.get('zona_cobertura')=='Facatativá' %}selected{% endif %}>Facatativá</option>
+            <option value="Madrid"     {% if form.get('zona_cobertura')=='Madrid' %}selected{% endif %}>Madrid</option>
+            <option value="Mosquera"   {% if form.get('zona_cobertura')=='Mosquera' %}selected{% endif %}>Mosquera</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Acciones ── -->
+    <div class="ct-actions">
+      <a href="{{ url_for('admin_usuarios', tab='tecnicos') }}" class="btn-cancel">
+        Cancelar
+      </a>
+      <button type="submit" class="btn-submit" id="submitBtn">
+        <i class="fa fa-user-plus"></i> Crear técnico
+      </button>
+    </div>
+
+  </form>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Toggle visibilidad contraseña
+function togglePw() {
+  const inp = document.getElementById('password');
+  const ico = document.getElementById('pwIcon');
+  if (inp.type === 'password') {
+    inp.type = 'text';
+    ico.className = 'fa fa-eye-slash';
+  } else {
+    inp.type = 'password';
+    ico.className = 'fa fa-eye';
+  }
+}
+
+// Indicador de fuerza de contraseña
+function checkStrength(val) {
+  const fill  = document.getElementById('strengthFill');
+  const label = document.getElementById('strengthLabel');
+  if (!val) {
+    fill.style.width = '0%';
+    label.textContent = 'Escribe una contraseña';
+    label.style.color = 'rgba(255,255,255,.35)';
+    return;
+  }
+  let score = 0;
+  if (val.length >= 6)  score++;
+  if (val.length >= 10) score++;
+  if (/[A-Z]/.test(val)) score++;
+  if (/[0-9]/.test(val)) score++;
+  if (/[^A-Za-z0-9]/.test(val)) score++;
+
+  const levels = [
+    { pct: '20%', color: '#e74c3c', text: 'Muy débil'  },
+    { pct: '40%', color: '#e67e22', text: 'Débil'      },
+    { pct: '60%', color: '#f39c12', text: 'Regular'    },
+    { pct: '80%', color: '#2ecc71', text: 'Fuerte'     },
+    { pct:'100%', color: '#1abc9c', text: 'Muy fuerte' },
+  ];
+  const lv = levels[Math.min(score - 1, 4)];
+  fill.style.width      = lv.pct;
+  fill.style.background = lv.color;
+  label.textContent     = lv.text;
+  label.style.color     = lv.color;
+}
+
+// Prevenir doble envío
+document.getElementById('formTecnico').addEventListener('submit', function() {
+  const btn = document.getElementById('submitBtn');
+  btn.disabled = true;
+  btn.innerHTML = '<i class="fa fa-spinner fa-spin"></i> Creando...';
+});
+</script>
+{% endblock %}

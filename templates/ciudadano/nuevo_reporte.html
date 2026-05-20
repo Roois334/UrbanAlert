@@ -1,0 +1,1217 @@
+{% extends 'ciudadano/base_ciudadano.html' %}
+{% block title %}Nuevo Reporte — Urban Alert{% endblock %}
+
+{% block content %}
+<style>
+  /* ── IA feedback ── */
+  .ia-panel {
+    background: rgba(255,107,0,.05);
+    border: 1px solid rgba(255,107,0,.2);
+    border-radius: var(--radius-md);
+    padding: 1.1rem 1.25rem;
+    margin-bottom: 1.5rem;
+  }
+  .ia-header {
+    display: flex;
+    align-items: center;
+    gap: .6rem;
+    margin-bottom: .6rem;
+  }
+  .ia-badge {
+    width: 28px; height: 28px;
+    background: var(--naranja);
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: .7rem;
+    flex-shrink: 0;
+  }
+  .ia-spinner {
+    width: 15px; height: 15px;
+    border: 2px solid rgba(255,107,0,.25);
+    border-top-color: var(--naranja);
+    border-radius: 50%;
+    animation: spin .7s linear infinite;
+  }
+
+  /* ── Category pills ── */
+  .cat-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: .6rem;
+    margin-top: .4rem;
+  }
+  .cat-pill {
+    border: 1.5px solid rgba(255,255,255,.1);
+    background: rgba(255,255,255,.04);
+    border-radius: var(--radius-sm);
+    padding: .55rem .4rem;
+    text-align: center;
+    font-size: .75rem;
+    color: var(--gris-4);
+    cursor: pointer;
+    transition: all var(--transition);
+    display: flex; flex-direction: column; align-items: center; gap: .3rem;
+    line-height: 1.2;
+  }
+  .cat-pill i { font-size: 1rem; color: var(--gris-3); transition: color var(--transition); }
+  .cat-pill:hover { border-color: rgba(255,107,0,.4); color: var(--blanco); }
+  .cat-pill:hover i { color: var(--naranja); }
+  .cat-pill.selected {
+    border-color: var(--naranja);
+    background: rgba(255,107,0,.1);
+    color: var(--naranja);
+  }
+  .cat-pill.selected i { color: var(--naranja); }
+
+  /* ── Separator label ── */
+  .field-section {
+    font-size: .7rem;
+    font-weight: 700;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    color: var(--gris-3);
+    margin: 2rem 0 1rem;
+    display: flex;
+    align-items: center;
+    gap: .75rem;
+  }
+  .field-section::after { content: ''; flex: 1; height: 1px; background: rgba(255,255,255,.07); }
+
+  .form-group-ua { margin-bottom: 1.25rem; }
+
+  /* ── Dirección con icono ── */
+  .dir-wrap { position: relative; }
+  .dir-wrap .dir-icon {
+    position: absolute;
+    left: .95rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--naranja);
+    font-size: .85rem;
+    pointer-events: none;
+  }
+  .dir-wrap .input-ua { padding-left: 2.5rem; }
+
+  @media (max-width: 640px) {
+    .cat-grid { grid-template-columns: repeat(2, 1fr); }
+    .grid-2   { grid-template-columns: 1fr !important; }
+  }
+
+  /* ══ UBICACIÓN MEJORADA ══ */
+  .loc-tabs {
+    display: flex;
+    gap: .5rem;
+    margin-bottom: 1.25rem;
+    background: rgba(255,255,255,.04);
+    border: 1px solid rgba(255,255,255,.08);
+    border-radius: var(--radius-md);
+    padding: .3rem;
+  }
+  .loc-tab {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: .5rem;
+    padding: .65rem 1rem;
+    border-radius: calc(var(--radius-md) - 3px);
+    font-size: .82rem;
+    font-weight: 600;
+    color: var(--gris-3);
+    cursor: pointer;
+    transition: all .2s ease;
+    border: none;
+    background: transparent;
+    letter-spacing: .02em;
+  }
+  .loc-tab i { font-size: .9rem; }
+  .loc-tab:hover { color: var(--blanco); background: rgba(255,255,255,.06); }
+  .loc-tab.active {
+    background: var(--naranja);
+    color: #fff;
+    box-shadow: 0 2px 12px rgba(255,107,0,.35);
+  }
+  .loc-panel { display: none; }
+  .loc-panel.active { display: block; }
+
+  /* Panel de geolocalización */
+  .geo-box {
+    border: 1.5px dashed rgba(255,107,0,.3);
+    border-radius: var(--radius-md);
+    padding: 1.5rem;
+    text-align: center;
+    background: rgba(255,107,0,.03);
+    transition: all .25s ease;
+  }
+  .geo-box.located {
+    border-style: solid;
+    border-color: rgba(255,107,0,.5);
+    background: rgba(255,107,0,.07);
+  }
+  .geo-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: .55rem;
+    padding: .7rem 1.4rem;
+    background: var(--naranja);
+    color: #fff;
+    border: none;
+    border-radius: var(--radius-sm);
+    font-size: .85rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all .2s ease;
+    box-shadow: 0 2px 10px rgba(255,107,0,.3);
+  }
+  .geo-btn:hover { background: #e05a00; transform: translateY(-1px); box-shadow: 0 4px 16px rgba(255,107,0,.4); }
+  .geo-btn:disabled { opacity: .6; cursor: not-allowed; transform: none; }
+  .geo-status {
+    margin-top: .9rem;
+    font-size: .8rem;
+    color: var(--gris-3);
+    min-height: 1.2rem;
+  }
+  .geo-result {
+    display: none;
+    margin-top: 1rem;
+    padding: .85rem 1rem;
+    background: rgba(255,255,255,.04);
+    border: 1px solid rgba(255,255,255,.1);
+    border-radius: var(--radius-sm);
+    text-align: left;
+  }
+  .geo-result.show { display: block; }
+  .geo-coords {
+    font-size: .75rem;
+    color: var(--gris-3);
+    margin-top: .3rem;
+    font-family: monospace;
+  }
+  .geo-addr-text {
+    font-size: .87rem;
+    color: var(--blanco);
+    font-weight: 600;
+    display: flex;
+    align-items: flex-start;
+    gap: .45rem;
+  }
+  .geo-addr-text i { color: var(--naranja); margin-top: .1rem; flex-shrink: 0; }
+  .geo-spinner {
+    display: inline-block;
+    width: 14px; height: 14px;
+    border: 2px solid rgba(255,255,255,.3);
+    border-top-color: #fff;
+    border-radius: 50%;
+    animation: spin .7s linear infinite;
+    vertical-align: middle;
+  }
+  .loc-or-divider {
+    display: flex;
+    align-items: center;
+    gap: .75rem;
+    color: var(--gris-3);
+    font-size: .72rem;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+    margin: 1rem 0;
+  }
+  .loc-or-divider::before, .loc-or-divider::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: rgba(255,255,255,.08);
+  }
+
+  /* Ciudad row */
+  .ciudad-row {
+    margin-bottom: 1rem;
+    position: relative;
+  }
+
+  /* ══ MAPA ══ */
+  #mapContainer {
+    border-radius: var(--radius-md);
+    overflow: hidden;
+    border: 1.5px solid rgba(255,107,0,.25);
+    margin-top: 1rem;
+    position: relative;
+    box-shadow: 0 4px 24px rgba(0,0,0,.35);
+  }
+  #map {
+    height: 260px;
+    width: 100%;
+    background: #1a1a2e;
+  }
+  .map-overlay-badge {
+    position: absolute;
+    top: .65rem;
+    left: .65rem;
+    background: rgba(0,0,0,.75);
+    backdrop-filter: blur(6px);
+    border: 1px solid rgba(255,107,0,.4);
+    color: var(--naranja);
+    font-size: .7rem;
+    font-weight: 700;
+    letter-spacing: .05em;
+    padding: .28rem .65rem;
+    border-radius: 20px;
+    pointer-events: none;
+    z-index: 500;
+    text-transform: uppercase;
+  }
+  .map-recenter-btn {
+    position: absolute;
+    bottom: .65rem;
+    right: .65rem;
+    z-index: 500;
+    background: var(--naranja);
+    border: none;
+    color: #fff;
+    width: 34px; height: 34px;
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer;
+    font-size: .85rem;
+    box-shadow: 0 2px 10px rgba(255,107,0,.5);
+    transition: background .2s, transform .15s;
+  }
+  .map-recenter-btn:hover { background: #e05a00; transform: scale(1.08); }
+
+  /* ══ AUTOCOMPLETE ══ */
+  .autocomplete-wrapper { position: relative; }
+  .autocomplete-list {
+    position: absolute;
+    top: calc(100% + 4px);
+    left: 0; right: 0;
+    background: #1e1e2a;
+    border: 1.5px solid var(--naranja);
+    border-radius: var(--radius-sm);
+    z-index: 9999;
+    max-height: 200px;
+    overflow-y: auto;
+    box-shadow: 0 12px 30px rgba(0,0,0,.6);
+    animation: dropIn .18s ease;
+  }
+  .autocomplete-item {
+    padding: .65rem 1rem;
+    font-size: .83rem;
+    color: rgba(255,255,255,.8);
+    cursor: pointer;
+    display: flex; align-items: flex-start; gap: .55rem;
+    border-left: 3px solid transparent;
+    transition: background .12s, color .12s;
+    line-height: 1.35;
+  }
+  .autocomplete-item i { color: var(--naranja); margin-top: .12rem; flex-shrink: 0; }
+  .autocomplete-item:hover {
+    background: rgba(255,107,0,.12);
+    color: #fff;
+    border-left-color: var(--naranja);
+  }
+
+  /* ══ RESULT CARD LOCATION ══ */
+  .loc-result-card {
+    display: none;
+    margin-top: .8rem;
+    padding: .85rem 1rem;
+    background: rgba(255,107,0,.07);
+    border: 1.5px solid rgba(255,107,0,.3);
+    border-radius: var(--radius-sm);
+    gap: .6rem;
+    align-items: flex-start;
+  }
+  .loc-result-card.show { display: flex; }
+  .loc-result-card i { color: var(--naranja); font-size: 1rem; margin-top: .1rem; flex-shrink: 0; }
+  .loc-result-card-body { flex: 1; min-width: 0; }
+  .loc-result-addr { font-size: .86rem; color: var(--blanco); font-weight: 600; margin-bottom: .2rem; }
+  .loc-result-barrio { font-size: .77rem; color: var(--gris-3); }
+  .loc-result-coords { font-size: .72rem; color: rgba(255,255,255,.3); font-family: monospace; margin-top: .18rem; }
+
+  /* ── Custom Select Dropdown ─────────────────────────── */
+  .custom-select-wrapper {
+    position: relative;
+    user-select: none;
+  }
+
+  .custom-select-trigger {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    padding: .72rem 1rem;
+    border: 1.5px solid rgba(255,255,255,.1);
+    border-radius: var(--radius-sm);
+    font-family: var(--font-body);
+    font-size: .9rem;
+    color: var(--blanco);
+    background: rgba(255,255,255,.05);
+    cursor: pointer;
+    transition: border-color .2s, box-shadow .2s, background .2s;
+    outline: none;
+    box-sizing: border-box;
+  }
+
+  .custom-select-trigger:hover {
+    border-color: rgba(255,107,0,.4);
+    background: rgba(255,255,255,.08);
+  }
+
+  .custom-select-trigger.open {
+    border-color: var(--naranja);
+    box-shadow: 0 0 0 3px rgba(255,107,0,.15);
+    background: rgba(255,255,255,.08);
+    border-bottom-left-radius: 0;
+    border-bottom-right-radius: 0;
+  }
+
+  .custom-select-trigger .chevron {
+    transition: transform .25s ease;
+    color: rgba(255,255,255,.4);
+    flex-shrink: 0;
+  }
+  .custom-select-trigger.open .chevron {
+    transform: rotate(180deg);
+    color: var(--naranja);
+  }
+
+  .custom-select-options {
+    display: none;
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: #1e1e2a;
+    border: 1.5px solid var(--naranja);
+    border-top: none;
+    border-bottom-left-radius: var(--radius-sm);
+    border-bottom-right-radius: var(--radius-sm);
+    overflow: hidden;
+    z-index: 999;
+    box-shadow: 0 12px 30px rgba(0,0,0,.55);
+    animation: dropIn .18s ease;
+  }
+
+  .custom-select-options.open {
+    display: block;
+  }
+
+  @keyframes dropIn {
+    from { opacity: 0; transform: translateY(-6px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  .custom-option {
+    display: flex;
+    align-items: center;
+    gap: .65rem;
+    padding: .75rem 1rem;
+    font-size: .9rem;
+    color: rgba(255,255,255,.75);
+    cursor: pointer;
+    transition: background .15s, color .15s;
+    border-left: 3px solid transparent;
+  }
+
+  .custom-option:hover {
+    background: rgba(255,107,0,.12);
+    color: var(--blanco);
+    border-left-color: var(--naranja);
+  }
+
+  .custom-option.selected {
+    background: rgba(255,107,0,.18);
+    color: var(--naranja);
+    font-weight: 600;
+    border-left-color: var(--naranja);
+  }
+
+  .custom-option .city-icon {
+    font-size: .8rem;
+    opacity: .6;
+  }
+  .custom-option.selected .city-icon {
+    opacity: 1;
+  }
+</style>
+
+<div class="container-ua" style="max-width:760px; padding-bottom: 3rem;">
+
+  <!-- Header -->
+  <div style="text-align:center; margin-bottom:2.5rem;">
+    <span class="section-tag">Ciudadano activo</span>
+    <h1 style="font-size:1.9rem; margin-top:.5rem;">Reportar un problema</h1>
+    <p style="color:var(--gris-3); margin-top:.4rem;">Sube una foto y nuestra IA analizará el problema automáticamente.</p>
+  </div>
+
+  <div class="card-ua" style="border-radius:var(--radius-xl);">
+    <div class="card-body-ua" style="padding:2.5rem;">
+      <form method="POST" enctype="multipart/form-data" id="reportForm">
+
+        <!-- ══ 1. FOTO ══════════════════════════════════════════ -->
+        <div class="field-section"><i class="fa fa-camera"></i> Fotografía</div>
+        <div class="form-group-ua">
+          <label class="label-ua">Foto del problema <span style="color:var(--naranja);">*</span></label>
+          <div class="upload-zone" id="uploadZone" onclick="document.getElementById('imagen').click()">
+            <div class="upload-icon" id="uploadIcon"><i class="fa fa-cloud-arrow-up"></i></div>
+            <div class="upload-text"><span>Haz clic para seleccionar</span> o arrastra aquí</div>
+            <div style="font-size:.75rem;color:var(--gris-3);margin-top:.4rem;">PNG · JPG · GIF — Máx 16 MB</div>
+            <img id="previewImg" src="" alt="" style="display:none;max-height:200px;margin:1rem auto 0;border-radius:var(--radius-md);">
+          </div>
+          <input type="file" id="imagen" name="imagen" accept="image/*" style="display:none;">
+        </div>
+
+        <!-- ── IA Feedback ── -->
+        <div id="iaFeedback" style="display:none;" class="ia-panel">
+          <div class="ia-header">
+            <div class="ia-badge"><i class="fa fa-robot" style="color:#fff;font-size:.75rem;"></i></div>
+            <span style="font-weight:700;font-size:.88rem;">Análisis de IA</span>
+            <div id="iaSpinner" class="ia-spinner" style="display:none;"></div>
+          </div>
+          <div id="iaResult" style="font-size:.84rem;color:var(--gris-3);">Analizando imagen…</div>
+        </div>
+
+        <!-- ══ 2. DETALLE ══════════════════════════════════════ -->
+        <div class="field-section"><i class="fa fa-pen-to-square"></i> Detalle del reporte</div>
+
+        <div class="form-group-ua">
+          <label class="label-ua">Título <span style="color:var(--naranja);">*</span></label>
+          <input type="text" name="titulo" id="tituloInput" class="input-ua" placeholder="Ej: Hueco grande en Calle 5" required>
+        </div>
+
+        <div class="form-group-ua">
+          <label class="label-ua">Categoría</label>
+          <div class="cat-grid" id="catGrid">
+            <div class="cat-pill" data-val="1"><i class="fa fa-circle-xmark"></i>Hueco / Bache</div>
+            <div class="cat-pill" data-val="2"><i class="fa fa-trash"></i>Basura</div>
+            <div class="cat-pill" data-val="3"><i class="fa fa-wrench"></i>Daño Urbano</div>
+            <div class="cat-pill" data-val="4"><i class="fa fa-triangle-exclamation"></i>Riesgo Vial</div>
+            <div class="cat-pill" data-val="5"><i class="fa fa-lightbulb"></i>Iluminación</div>
+            <div class="cat-pill" data-val="6"><i class="fa fa-tree"></i>Vegetación</div>
+            <div class="cat-pill" data-val="7"><i class="fa fa-droplet"></i>Inundación</div>
+            <div class="cat-pill" data-val="8"><i class="fa fa-flag"></i>Otro</div>
+          </div>
+          <input type="hidden" name="categoria_id" id="categoriaInput" value="1">
+        </div>
+
+        <div class="form-group-ua">
+          <label class="label-ua">Descripción</label>
+          <textarea name="descripcion" id="descripcionTextarea" class="input-ua" rows="3" placeholder="Describe el problema con más detalle…"></textarea>
+        </div>
+
+        <!-- ══ 3. UBICACIÓN ════════════════════════════════════ -->
+        <div class="field-section"><i class="fa fa-location-dot"></i> Ubicación</div>
+
+        <!-- Ciudad (siempre visible) -->
+        <div class="form-group-ua ciudad-row">
+          <label class="label-ua">Ciudad <span style="color:var(--naranja);">*</span></label>
+
+          <!-- Hidden real input para el form -->
+          <input type="hidden" name="ciudad" id="ciudadInput" value="Facatativá" required>
+
+          <div class="custom-select-wrapper" id="ciudadSelectWrapper">
+            <div class="custom-select-trigger" id="ciudadTrigger" tabindex="0" role="combobox" aria-expanded="false" aria-haspopup="listbox">
+              <span id="ciudadLabel">
+                <i class="fa fa-location-dot" style="color:var(--naranja);margin-right:.45rem;font-size:.8rem;"></i>
+                Facatativá
+              </span>
+              <svg class="chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+            </div>
+            <div class="custom-select-options" id="ciudadOptions" role="listbox">
+              <div class="custom-option selected" data-value="Facatativá" role="option">
+                <i class="fa fa-location-dot city-icon"></i> Facatativá
+              </div>
+              <div class="custom-option" data-value="Madrid" role="option">
+                <i class="fa fa-location-dot city-icon"></i> Madrid
+              </div>
+              <div class="custom-option" data-value="Mosquera" role="option">
+                <i class="fa fa-location-dot city-icon"></i> Mosquera
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tabs selector de modo -->
+        <label class="label-ua" style="margin-bottom:.6rem;display:block;">
+          Dirección <span style="color:var(--naranja);">*</span>
+        </label>
+        <div class="loc-tabs" role="tablist">
+          <button type="button" class="loc-tab active" data-panel="manual" role="tab">
+            <i class="fa fa-keyboard"></i> Escribir dirección
+          </button>
+          <button type="button" class="loc-tab" data-panel="geo" role="tab">
+            <i class="fa fa-crosshairs"></i> Usar mi ubicación
+          </button>
+        </div>
+
+        <!-- Panel 1: Escritura manual con autocomplete + barrio -->
+        <div class="loc-panel active" id="panel-manual">
+          <!-- Dirección con autocomplete -->
+          <div class="autocomplete-wrapper" style="margin-bottom:.75rem;">
+            <div class="dir-wrap">
+              <i class="fa fa-map-pin dir-icon"></i>
+              <input type="text" name="direccion" id="direccionInput" class="input-ua"
+                placeholder="Ej: Calle 5 con Carrera 8" autocomplete="off">
+            </div>
+            <div class="autocomplete-list" id="autocompleteList" style="display:none;"></div>
+          </div>
+          <!-- Barrio -->
+          <div style="margin-bottom:.75rem;">
+            <div class="dir-wrap">
+              <i class="fa fa-map dir-icon"></i>
+              <input type="text" name="barrio" id="barrioInput" class="input-ua"
+                placeholder="Barrio (ej: El Centro, La Esperanza…)" autocomplete="off" style="padding-left:2.5rem;">
+            </div>
+          </div>
+          <!-- Referencia -->
+          <div style="margin-bottom:.5rem;">
+            <div class="dir-wrap">
+              <i class="fa fa-signs-post dir-icon"></i>
+              <input type="text" name="referencia" id="referenciaInput" class="input-ua"
+                placeholder="Referencia (ej: frente al parque, junto al semáforo)" autocomplete="off" style="padding-left:2.5rem;">
+            </div>
+          </div>
+          <p style="font-size:.74rem;color:var(--gris-3);margin-bottom:.75rem;">
+            <i class="fa fa-circle-info" style="color:var(--naranja);"></i>
+            Escribe la dirección y selecciona de las sugerencias para marcar en el mapa.
+          </p>
+          <!-- Tarjeta resultado -->
+          <div class="loc-result-card" id="manualResultCard">
+            <i class="fa fa-circle-check"></i>
+            <div class="loc-result-card-body">
+              <div class="loc-result-addr" id="manualResultAddr">—</div>
+              <div class="loc-result-barrio" id="manualResultBarrio"></div>
+              <div class="loc-result-coords" id="manualResultCoords"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Panel 2: Geolocalización GPS -->
+        <div class="loc-panel" id="panel-geo">
+          <div class="geo-box" id="geoBox">
+            <i class="fa fa-satellite-dish" style="font-size:2rem;color:var(--naranja);opacity:.7;margin-bottom:.75rem;display:block;"></i>
+            <p style="font-size:.85rem;color:var(--gris-3);margin-bottom:1rem;line-height:1.5;">
+              Permite que UrbanAlert acceda a tu ubicación para registrarla automáticamente.
+            </p>
+            <button type="button" class="geo-btn" id="geoBtn">
+              <i class="fa fa-location-crosshairs"></i> Obtener mi ubicación
+            </button>
+            <div class="geo-status" id="geoStatus"></div>
+            <div class="geo-result" id="geoResult">
+              <div class="geo-addr-text">
+                <i class="fa fa-location-dot"></i>
+                <span id="geoAddrSpan">—</span>
+              </div>
+              <div class="geo-coords" id="geoCoordsText"></div>
+            </div>
+          </div>
+          <p style="font-size:.74rem;color:var(--gris-3);margin-top:.55rem;">
+            <i class="fa fa-lock" style="color:var(--naranja);"></i>
+            Solo se registra al enviar el reporte. Nunca se comparte sin tu permiso.
+          </p>
+        </div>
+
+        <!-- ══ MAPA INTERACTIVO (visible tras elegir ubicación) ══ -->
+        <div id="mapContainer" style="display:none;">
+          <span class="map-overlay-badge"><i class="fa fa-map-location-dot"></i> &nbsp;Punto del reporte</span>
+          <div id="map"></div>
+          <button type="button" class="map-recenter-btn" id="mapRecenterBtn" title="Centrar mapa">
+            <i class="fa fa-crosshairs"></i>
+          </button>
+        </div>
+        <p id="mapHint" style="font-size:.72rem;color:var(--gris-3);margin-top:.45rem;display:none;">
+          <i class="fa fa-hand-pointer" style="color:var(--naranja);"></i>
+          Puedes arrastrar el marcador para ajustar la ubicación exacta.
+        </p>
+
+        <!-- Campos ocultos -->
+        <input type="hidden" name="latitud"  id="latInput">
+        <input type="hidden" name="longitud" id="lngInput">
+        <input type="hidden" name="modo_ubicacion" id="modoUbicacion" value="manual">
+
+        <!-- ══ ENVIAR ═══════════════════════════════════════════ -->
+        <!-- Alerta imagen no urbana -->
+        <div id="alerta-no-urbano" style="display:none; background:rgba(220,53,69,.15); border:1.5px solid rgba(220,53,69,.4); color:#ff6b6b; padding:1rem 1.2rem; border-radius:var(--radius-md); margin-top:1.5rem; font-size:.88rem; line-height:1.5;">
+          <i class="fa fa-circle-xmark" style="margin-right:.5rem;"></i>
+          <strong>Imagen inválida:</strong> La foto no muestra un problema urbano real. Sube una imagen del bache, daño, basura u otro problema en la vía pública.
+        </div>
+        <!-- Campos ocultos para duplicados -->
+        <input type="hidden" name="ignorar_duplicado" id="ignorarDuplicado" value="0">
+        <input type="hidden" name="ruta_imagen_temp" value="{{ ruta_imagen_temp or '' }}">
+        <input type="hidden" name="hash_imagen" value="{{ hash_imagen or '' }}">
+
+        <button type="submit" class="btn-ua btn-primary-ua btn-lg-ua w-100" id="submitBtn" style="margin-top:1rem;">
+          <i class="fa fa-paper-plane"></i> Enviar reporte
+        </button>
+
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="">
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+<script>
+{% raw %}
+/* ════ Category pills ════ */
+const catPills = document.querySelectorAll('.cat-pill');
+const catInput = document.getElementById('categoriaInput');
+catPills[0].classList.add('selected');
+catPills.forEach(p => {
+  p.addEventListener('click', () => {
+    catPills.forEach(x => x.classList.remove('selected'));
+    p.classList.add('selected');
+    catInput.value = p.dataset.val;
+  });
+});
+
+/* ════ Upload & IA ════ */
+const input         = document.getElementById('imagen');
+const zone          = document.getElementById('uploadZone');
+const prev          = document.getElementById('previewImg');
+const iaFb          = document.getElementById('iaFeedback');
+const iaRes         = document.getElementById('iaResult');
+const iaSpinner     = document.getElementById('iaSpinner');
+const descripcionTA = document.getElementById('descripcionTextarea');
+
+function toBase64(file){
+  return new Promise((res,rej)=>{
+    const r = new FileReader();
+    r.onload = () => res(r.result.split(',')[1]);
+    r.onerror = rej;
+    r.readAsDataURL(file);
+  });
+}
+
+input.addEventListener('change', async e => {
+  const file = e.target.files[0];
+  if(!file) return;
+
+  const reader = new FileReader();
+  reader.onload = ev => {
+    prev.src = ev.target.result;
+    prev.style.display = 'block';
+    document.getElementById('uploadIcon').style.display = 'none';
+  };
+  reader.readAsDataURL(file);
+
+  iaFb.style.display = 'block';
+  iaSpinner.style.display = 'inline-block';
+  iaRes.innerHTML = '<em>Analizando imagen con IA…</em>';
+
+  try {
+    const imagen_b64 = await toBase64(file);
+    const resp = await fetch('/api/v1/analizar-imagen', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ imagen: imagen_b64, tipo: file.type || 'image/jpeg' })
+    });
+    iaSpinner.style.display = 'none';
+    if(!resp.ok){
+      const err = await resp.json();
+      iaRes.innerHTML = `<span style="color:#e55;">${err.error || 'Error al analizar la imagen'}</span>`;
+      return;
+    }
+    const data = await resp.json();
+    // Bloquear si no es problema urbano
+    const submitBtn   = document.getElementById('submitBtn');
+    const alertaNoUrb = document.getElementById('alerta-no-urbano');
+    const esNoUrbano  = data.gravedad === 0 || data.tipo_detectado === 'No es problema urbano';
+
+    if (esNoUrbano) {
+      submitBtn.disabled = true;
+      submitBtn.style.opacity = '0.35';
+      submitBtn.style.cursor  = 'not-allowed';
+      alertaNoUrb.style.display = 'block';
+      const gc2 = '#e55';
+      iaRes.innerHTML = `
+        <strong style="color:#ff6b6b;">⚠ ${data.tipo_detectado}</strong>
+        &nbsp;·&nbsp;<strong>Confianza:</strong> ${Math.round(data.confianza * 100)}%
+        ${data.descripcion_ia ? `<div style="color:#ff6b6b;font-size:.8rem;margin-top:.4rem;">${data.descripcion_ia}</div>` : ''}
+      `;
+      iaFb.style.background = 'rgba(220,53,69,.08)';
+      iaFb.style.borderColor = 'rgba(220,53,69,.35)';
+    } else {
+      submitBtn.disabled = false;
+      submitBtn.style.opacity = '1';
+      submitBtn.style.cursor  = '';
+      alertaNoUrb.style.display = 'none';
+      iaFb.style.background = '';
+      iaFb.style.borderColor = '';
+
+    const gc = data.gravedad >= 80 ? '#e55' : data.gravedad >= 60 ? 'var(--naranja)' : '#f0b429';
+    iaRes.innerHTML = `
+      <strong>Detección:</strong> ${data.tipo_detectado} &nbsp;·&nbsp;
+      <strong>Gravedad:</strong> <span style="color:${gc};font-weight:600;">${Math.round(data.gravedad)}%</span> &nbsp;·&nbsp;
+      <strong>Confianza:</strong> ${Math.round(data.confianza * 100)}%
+      ${data.descripcion_ia ? `<div style="color:var(--gris-3);font-size:.8rem;margin-top:.4rem;">${data.descripcion_ia}</div>` : ''}
+    `;
+    }
+    if(!esNoUrbano && data.categoria_id_sugerida){
+      catPills.forEach(p => p.classList.remove('selected'));
+      const match = [...catPills].find(p => p.dataset.val == data.categoria_id_sugerida);
+      if(match){ match.classList.add('selected'); catInput.value = match.dataset.val; }
+    }
+    // Auto-llenar título (usa titulo_sugerido de la IA, o construye uno de respaldo)
+    const tituloInput = document.getElementById('tituloInput');
+    if(!esNoUrbano && !tituloInput.value.trim()) {
+      if(data.titulo_sugerido) {
+        tituloInput.value = data.titulo_sugerido;
+      } else if(data.tipo_detectado) {
+        const priorLabels = { critica: ' urgente', alta: ' grave', media: '', baja: ' leve' };
+        const suf = priorLabels[data.prioridad] || '';
+        tituloInput.value = data.tipo_detectado + suf;
+      }
+    }
+    // Auto-llenar descripción
+    if(!esNoUrbano && data.descripcion_ia && !descripcionTA.value.trim())
+      descripcionTA.value = data.descripcion_ia;
+  } catch(err){
+    iaSpinner.style.display = 'none';
+    iaRes.innerHTML = '<span style="color:#e55;">No se pudo conectar con el servicio de IA.</span>';
+  }
+});
+
+zone.addEventListener('dragover', e => { e.preventDefault(); zone.classList.add('dragging'); });
+zone.addEventListener('dragleave', () => zone.classList.remove('dragging'));
+zone.addEventListener('drop', e => {
+  e.preventDefault(); zone.classList.remove('dragging');
+  if(e.dataTransfer.files.length){ input.files = e.dataTransfer.files; input.dispatchEvent(new Event('change')); }
+});
+
+/* ════ Tabs de ubicación ════ */
+const locTabs   = document.querySelectorAll('.loc-tab');
+const locPanels = document.querySelectorAll('.loc-panel');
+const modoInput = document.getElementById('modoUbicacion');
+
+locTabs.forEach(tab => {
+  tab.addEventListener('click', () => {
+    const target = tab.dataset.panel;
+    locTabs.forEach(t => t.classList.remove('active'));
+    locPanels.forEach(p => p.classList.remove('active'));
+    tab.classList.add('active');
+    document.getElementById('panel-' + target).classList.add('active');
+    modoInput.value = target;
+    updateDireccionRequired();
+    // Si hay un mapa ya inicializado, forzar resize
+    if (window._uaMap) setTimeout(() => window._uaMap.invalidateSize(), 200);
+  });
+});
+
+function updateDireccionRequired() {
+  const dirInput = document.getElementById('direccionInput');
+  const modo = modoInput.value;
+  if (modo === 'geo' && document.getElementById('latInput').value) {
+    dirInput.removeAttribute('required');
+  } else {
+    dirInput.setAttribute('required', '');
+  }
+}
+
+/* ════ MAPA (Leaflet — cargado al inicio) ════ */
+let _mapMarker = null;
+let _pendingMapCoords = null;
+
+// Leaflet ya está cargado via {% block scripts %} head links
+function showMap(lat, lng) {
+  const container = document.getElementById('mapContainer');
+  const hint      = document.getElementById('mapHint');
+  container.style.display = 'block';
+  hint.style.display      = 'block';
+
+  if (!window.L) {
+    // Fallback: guardar coords y reintentar en 800ms
+    _pendingMapCoords = [lat, lng];
+    setTimeout(() => { if (_pendingMapCoords && window.L) showMap(..._pendingMapCoords); }, 800);
+    return;
+  }
+
+  if (!window._uaMap) {
+    initMap(lat, lng);
+  } else {
+    updateMarker(lat, lng);
+  }
+}
+
+function initMap(lat, lng) {
+  const map = L.map('map', {
+    zoomControl: false,
+    scrollWheelZoom: false,
+    attributionControl: true
+  }).setView([lat, lng], 16);
+
+  window._uaMap = map;
+
+  // Controles de zoom arriba a la derecha
+  L.control.zoom({ position: 'topright' }).addTo(map);
+
+  // Tiles OSM estándar — más confiables, sin necesidad de API key
+  L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '© <a href="https://openstreetmap.org">OpenStreetMap</a>',
+    maxZoom: 19
+  }).addTo(map);
+
+  // Oscurecer tiles con CSS para mantener el look oscuro del app
+  const tilePane = map.getPanes().tilePane;
+  tilePane.style.filter = 'invert(1) hue-rotate(180deg) saturate(0.6) brightness(0.85)';
+
+  // Marcador personalizado naranja
+  const icon = L.divIcon({
+    html: `<div style="
+      position:relative;width:36px;height:36px;
+    ">
+      <div style="
+        width:36px;height:36px;
+        background:#ff6b00;
+        border:3px solid #fff;
+        border-radius:50% 50% 50% 0;
+        transform:rotate(-45deg);
+        box-shadow:0 4px 16px rgba(255,107,0,.7);
+      "></div>
+      <div style="
+        position:absolute;top:7px;left:7px;
+        width:14px;height:14px;
+        background:#fff;
+        border-radius:50%;
+        transform:rotate(45deg);
+      "></div>
+    </div>`,
+    iconSize: [36, 36],
+    iconAnchor: [18, 36],
+    className: ''
+  });
+
+  _mapMarker = L.marker([lat, lng], { icon, draggable: true }).addTo(map);
+
+  _mapMarker.on('dragend', async () => {
+    const pos = _mapMarker.getLatLng();
+    setCoords(pos.lat.toFixed(6), pos.lng.toFixed(6));
+    await reverseGeocode(pos.lat, pos.lng, true);
+  });
+
+  document.getElementById('mapRecenterBtn').addEventListener('click', () => {
+    const la = document.getElementById('latInput').value;
+    const lo = document.getElementById('lngInput').value;
+    if (la && lo) map.flyTo([+la, +lo], 17, { duration: .7 });
+  });
+
+  // Forzar resize por si el contenedor estaba oculto
+  setTimeout(() => map.invalidateSize(), 100);
+}
+
+function updateMarker(lat, lng) {
+  _mapMarker.setLatLng([lat, lng]);
+  window._uaMap.flyTo([lat, lng], 17, { duration: .7 });
+}
+
+function setCoords(lat, lng) {
+  document.getElementById('latInput').value  = lat;
+  document.getElementById('lngInput').value  = lng;
+}
+
+/* ════ REVERSE GEOCODING (Nominatim) ════ */
+async function reverseGeocode(lat, lng, updateInputs) {
+  try {
+    const res  = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json&accept-language=es`);
+    const data = await res.json();
+    const addr = data.address || {};
+    const road = addr.road || addr.pedestrian || addr.footway || '';
+    const house = addr.house_number ? ` ${addr.house_number}` : '';
+    const barrio = addr.suburb || addr.neighbourhood || addr.borough || addr.quarter || addr.city_district || '';
+    const ciudad = addr.city || addr.town || addr.village || addr.municipality || '';
+    const full = data.display_name || `${lat}, ${lng}`;
+
+    if (updateInputs && modoInput.value === 'manual') {
+      if (road) document.getElementById('direccionInput').value = road + house;
+      if (barrio) document.getElementById('barrioInput').value = barrio;
+      showManualResult(road + house, barrio, lat, lng);
+    } else if (modoInput.value === 'geo') {
+      document.getElementById('geoAddrSpan').textContent = full;
+      document.getElementById('geoCoordsText').textContent = `${lat}, ${lng}`;
+      // también llenar barrio en modo geo
+      if (barrio) document.getElementById('barrioInput').value = barrio;
+      if (road) document.getElementById('direccionInput').value = road + house;
+    }
+    return { road, barrio, ciudad, full };
+  } catch {
+    return { road: '', barrio: '', ciudad: '', full: `${lat}, ${lng}` };
+  }
+}
+
+function showManualResult(addr, barrio, lat, lng) {
+  const card = document.getElementById('manualResultCard');
+  document.getElementById('manualResultAddr').textContent = addr || '—';
+  document.getElementById('manualResultBarrio').textContent = barrio ? `📍 ${barrio}` : '';
+  document.getElementById('manualResultCoords').textContent = lat && lng ? `${lat}, ${lng}` : '';
+  card.classList.add('show');
+}
+
+/* ════ AUTOCOMPLETE de dirección (Nominatim) ════ */
+let _acTimer = null;
+const direccionInput = document.getElementById('direccionInput');
+const autocompleteList = document.getElementById('autocompleteList');
+const ciudad = () => document.getElementById('ciudadInput').value || 'Colombia';
+
+direccionInput.addEventListener('input', () => {
+  clearTimeout(_acTimer);
+  const q = direccionInput.value.trim();
+  if (q.length < 3) { autocompleteList.style.display = 'none'; return; }
+  _acTimer = setTimeout(() => searchAddress(q), 400);
+});
+
+async function searchAddress(q) {
+  try {
+    const res = await fetch(
+      `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(q + ', ' + ciudad())}&format=json&addressdetails=1&limit=5&accept-language=es`
+    );
+    const items = await res.json();
+    renderAutocomplete(items);
+  } catch { autocompleteList.style.display = 'none'; }
+}
+
+function renderAutocomplete(items) {
+  if (!items.length) { autocompleteList.style.display = 'none'; return; }
+  autocompleteList.innerHTML = items.map((it, i) => {
+    const addr = it.address || {};
+    const road = addr.road || addr.pedestrian || it.display_name.split(',')[0];
+    const barrio = addr.suburb || addr.neighbourhood || addr.borough || '';
+    const sub = [barrio, addr.city || addr.town || addr.village].filter(Boolean).join(', ');
+    return `<div class="autocomplete-item" data-i="${i}" data-lat="${it.lat}" data-lng="${it.lon}" data-road="${road}" data-barrio="${barrio}">
+      <i class="fa fa-location-dot"></i>
+      <div><div style="font-weight:600;">${road}</div><div style="font-size:.75rem;color:rgba(255,255,255,.45);">${sub}</div></div>
+    </div>`;
+  }).join('');
+  autocompleteList.style.display = 'block';
+
+  autocompleteList.querySelectorAll('.autocomplete-item').forEach(el => {
+    el.addEventListener('mousedown', async e => {
+      e.preventDefault();
+      const lat = parseFloat(el.dataset.lat).toFixed(6);
+      const lng = parseFloat(el.dataset.lng).toFixed(6);
+      const road = el.dataset.road;
+      const barrio = el.dataset.barrio;
+
+      direccionInput.value = road;
+      if (barrio) document.getElementById('barrioInput').value = barrio;
+      autocompleteList.style.display = 'none';
+      setCoords(lat, lng);
+      showManualResult(road, barrio, lat, lng);
+      showMap(parseFloat(lat), parseFloat(lng));
+      updateDireccionRequired();
+    });
+  });
+}
+
+// Cerrar autocomplete al hacer click fuera
+document.addEventListener('click', e => {
+  if (!e.target.closest('.autocomplete-wrapper')) autocompleteList.style.display = 'none';
+});
+
+/* ════ Geolocalización GPS ════ */
+const geoBtn        = document.getElementById('geoBtn');
+const geoStatus     = document.getElementById('geoStatus');
+const geoResult     = document.getElementById('geoResult');
+const geoBox        = document.getElementById('geoBox');
+const geoAddrSpan   = document.getElementById('geoAddrSpan');
+const geoCoordsText = document.getElementById('geoCoordsText');
+const latInput      = document.getElementById('latInput');
+const lngInput      = document.getElementById('lngInput');
+
+geoBtn.addEventListener('click', () => {
+  if (!navigator.geolocation) {
+    geoStatus.innerHTML = '<span style="color:#e55;"><i class="fa fa-triangle-exclamation"></i> Tu navegador no soporta geolocalización.</span>';
+    return;
+  }
+  geoBtn.disabled = true;
+  geoStatus.innerHTML = '<span class="geo-spinner"></span> Obteniendo ubicación…';
+  geoResult.classList.remove('show');
+
+  navigator.geolocation.getCurrentPosition(
+    async pos => {
+      const lat = pos.coords.latitude.toFixed(6);
+      const lng = pos.coords.longitude.toFixed(6);
+      setCoords(lat, lng);
+      geoCoordsText.textContent = `${lat}, ${lng}`;
+      geoStatus.innerHTML = '<span style="color:#4caf50;"><i class="fa fa-check-circle"></i> Ubicación obtenida. Buscando dirección…</span>';
+
+      const geo = await reverseGeocode(lat, lng, false);
+      geoAddrSpan.textContent = geo.full;
+      if (geo.barrio) document.getElementById('barrioInput').value = geo.barrio;
+      if (geo.road)   document.getElementById('direccionInput').value = geo.road;
+
+      geoResult.classList.add('show');
+      geoBox.classList.add('located');
+      geoStatus.innerHTML = '<span style="color:#4caf50;"><i class="fa fa-circle-check"></i> ¡Listo! Ubicación registrada.</span>';
+      geoBtn.innerHTML    = '<i class="fa fa-rotate-right"></i> Actualizar';
+      geoBtn.disabled     = false;
+      updateDireccionRequired();
+      showMap(parseFloat(lat), parseFloat(lng));
+    },
+    err => {
+      geoBtn.disabled = false;
+      const msgs = { 1: 'Permiso denegado.', 2: 'No se pudo obtener la posición.', 3: 'Tiempo agotado.' };
+      geoStatus.innerHTML = `<span style="color:#e55;"><i class="fa fa-triangle-exclamation"></i> ${msgs[err.code] || 'Error desconocido.'}</span>`;
+    },
+    { enableHighAccuracy: true, timeout: 12000, maximumAge: 0 }
+  );
+});
+// ── Custom Select Ciudad ──────────────────────────────────
+(function() {
+  const trigger  = document.getElementById('ciudadTrigger');
+  const options  = document.getElementById('ciudadOptions');
+  const labelEl  = document.getElementById('ciudadLabel');
+  const input    = document.getElementById('ciudadInput');
+  const allOpts  = options.querySelectorAll('.custom-option');
+
+  function open() {
+    trigger.classList.add('open');
+    options.classList.add('open');
+    trigger.setAttribute('aria-expanded', 'true');
+  }
+  function close() {
+    trigger.classList.remove('open');
+    options.classList.remove('open');
+    trigger.setAttribute('aria-expanded', 'false');
+  }
+  function toggle() {
+    trigger.classList.contains('open') ? close() : open();
+  }
+
+  trigger.addEventListener('click', toggle);
+  trigger.addEventListener('keydown', e => {
+    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggle(); }
+    if (e.key === 'Escape') close();
+  });
+
+  allOpts.forEach(opt => {
+    opt.addEventListener('click', () => {
+      allOpts.forEach(o => o.classList.remove('selected'));
+      opt.classList.add('selected');
+      const val = opt.dataset.value;
+      input.value = val;
+      labelEl.innerHTML = `<i class="fa fa-location-dot" style="color:var(--naranja);margin-right:.45rem;font-size:.8rem;"></i>${val}`;
+      close();
+    });
+  });
+
+  // Cerrar al hacer click fuera
+  document.addEventListener('click', e => {
+    if (!document.getElementById('ciudadSelectWrapper').contains(e.target)) close();
+  });
+})();
+
+{% endraw %}
+</script>
+
+<!-- ══════════════════════════════════════════
+     MODAL DE DUPLICADOS
+══════════════════════════════════════════ -->
+{% if duplicados_encontrados %}
+<div id="modalDuplicados" style="
+  position:fixed;inset:0;z-index:9000;
+  background:rgba(0,0,0,.82);backdrop-filter:blur(8px);
+  display:flex;align-items:center;justify-content:center;padding:1rem;">
+  <div style="
+    background:linear-gradient(160deg,#1e1e1e,#161616);
+    border:1px solid rgba(255,107,0,.35);
+    border-radius:22px;padding:2rem;
+    width:100%;max-width:600px;max-height:90vh;overflow-y:auto;
+    box-shadow:0 24px 64px rgba(0,0,0,.7);
+    animation:fadeUpDup .25s ease;">
+    <style>
+      @keyframes fadeUpDup{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+      .dup-header{display:flex;align-items:center;gap:1rem;margin-bottom:1.4rem;}
+      .dup-icon{width:52px;height:52px;border-radius:16px;background:rgba(255,193,7,.12);
+        border:1px solid rgba(255,193,7,.3);display:flex;align-items:center;justify-content:center;
+        font-size:1.4rem;color:#ffc107;flex-shrink:0;}
+      .dup-title{font-size:1.15rem;font-weight:900;color:#fff;letter-spacing:-.02em;}
+      .dup-sub{font-size:.83rem;color:rgba(255,255,255,.4);margin-top:.2rem;}
+      .dup-card{
+        background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);
+        border-radius:14px;padding:1rem 1.1rem;margin-bottom:.75rem;
+        display:grid;grid-template-columns:60px 1fr;gap:.9rem;align-items:center;
+        transition:border-color .18s;}
+      .dup-card:hover{border-color:rgba(255,107,0,.25);}
+      .dup-thumb{width:60px;height:60px;border-radius:10px;object-fit:cover;
+        background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.08);}
+      .dup-thumb-ph{width:60px;height:60px;border-radius:10px;
+        background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.08);
+        display:flex;align-items:center;justify-content:center;
+        color:rgba(255,255,255,.2);font-size:1.3rem;}
+      .dup-name{font-size:.88rem;font-weight:700;color:#fff;margin-bottom:.25rem;
+        overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+      .dup-addr{font-size:.75rem;color:rgba(255,255,255,.35);margin-bottom:.35rem;}
+      .dup-razones{display:flex;flex-wrap:wrap;gap:.3rem;}
+      .dup-pill{font-size:.68rem;font-weight:700;padding:.2rem .6rem;border-radius:99px;
+        background:rgba(255,107,0,.12);border:1px solid rgba(255,107,0,.25);color:#FF6B00;}
+      .dup-estado{font-size:.68rem;font-weight:700;padding:.2rem .6rem;border-radius:99px;}
+      .dup-estado.pendiente{background:rgba(255,193,7,.12);color:#ffc107;}
+      .dup-estado.en_revision{background:rgba(52,152,219,.12);color:#3498db;}
+      .dup-estado.aprobado{background:rgba(46,204,113,.12);color:#2ecc71;}
+      .dup-estado.asignado{background:rgba(156,39,176,.12);color:#ce93d8;}
+      .dup-estado.en_progreso{background:rgba(52,152,219,.15);color:#3498db;}
+      .dup-btn-ignore{
+        width:100%;padding:.7rem;border-radius:12px;font-size:.88rem;font-weight:700;
+        background:rgba(231,76,60,.1);border:1.5px solid rgba(231,76,60,.3);color:#e74c3c;
+        cursor:pointer;transition:all .18s;margin-top:.25rem;}
+      .dup-btn-ignore:hover{background:rgba(231,76,60,.2);}
+      .dup-btn-cancel{
+        width:100%;padding:.7rem;border-radius:12px;font-size:.88rem;font-weight:700;
+        background:rgba(46,204,113,.1);border:1.5px solid rgba(46,204,113,.3);color:#2ecc71;
+        cursor:pointer;transition:all .18s;margin-top:.5rem;}
+      .dup-btn-cancel:hover{background:rgba(46,204,113,.2);}
+    </style>
+
+    <div class="dup-header">
+      <div class="dup-icon"><i class="fa fa-triangle-exclamation"></i></div>
+      <div>
+        <div class="dup-title">¡Posible reporte duplicado!</div>
+        <div class="dup-sub">Encontramos {{ duplicados_encontrados|length }} reporte(s) similar(es) ya registrado(s). Revísalos antes de continuar.</div>
+      </div>
+    </div>
+
+    <!-- Lista de duplicados -->
+    {% for d in duplicados_encontrados %}
+    <div class="dup-card">
+      {% if d.imagen %}
+      <img class="dup-thumb" src="{{ url_for('uploaded_file', filename=d.imagen) }}" alt="foto">
+      {% else %}
+      <div class="dup-thumb-ph"><i class="fa fa-image"></i></div>
+      {% endif %}
+      <div>
+        <div class="dup-name" title="{{ d.titulo }}">#{{ d.id }} — {{ d.titulo }}</div>
+        <div class="dup-addr"><i class="fa fa-location-dot" style="color:#FF6B00;margin-right:.3rem;font-size:.65rem;"></i>{{ d.ciudad }}{% if d.direccion %} · {{ d.direccion[:50] }}{% endif %} · {{ d.creado_en }}</div>
+        <div class="dup-razones">
+          <span class="dup-estado {{ d.estado }}">{{ d.estado.replace('_',' ').title() }}</span>
+          {% for r in d.razones %}
+          <span class="dup-pill">{{ r }}</span>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+
+    <div style="margin-top:1.2rem;padding-top:1.2rem;border-top:1px solid rgba(255,255,255,.07);">
+      <div style="font-size:.8rem;color:rgba(255,255,255,.35);margin-bottom:1rem;line-height:1.6;">
+        <i class="fa fa-circle-info" style="color:#3498db;margin-right:.4rem;"></i>
+        Si tu reporte es diferente al de arriba, puedes enviarlo igual. Si es el mismo problema, <strong style="color:#fff;">no es necesario duplicarlo</strong> — el equipo ya está trabajando en ello.
+      </div>
+      <button class="dup-btn-ignore" onclick="enviarDeTodasFormas()">
+        <i class="fa fa-paper-plane"></i> Es diferente — Enviar de todas formas
+      </button>
+      <button class="dup-btn-cancel" onclick="document.getElementById('modalDuplicados').style.display='none'">
+        <i class="fa fa-arrow-left"></i> Volver y revisar mi reporte
+      </button>
+    </div>
+  </div>
+</div>
+
+<script>
+function enviarDeTodasFormas() {
+  document.getElementById('ignorarDuplicado').value = '1';
+  document.querySelector('form').submit();
+}
+</script>
+{% endif %}
+{% endblock %}

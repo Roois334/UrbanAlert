@@ -1,0 +1,292 @@
+{% extends 'landing/base.html' %}
+{% block title %}Urban Alert — Plataforma Inteligente de Reportes Urbanos{% endblock %}
+
+{% block content %}
+
+<!-- ══ HERO ══════════════════════════════════════════════ -->
+<section class="hero-ua">
+  <!-- Logo difuminado de fondo -->
+  <div class="hero-logo-bg"></div>
+  <div class="container-ua" style="width:100%;">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:4rem;align-items:center;">
+      <div class="hero-content">
+        <div class="hero-badge fade-up">
+          <span class="pulse-dot"></span>
+          Sistema activo en 3 ciudades
+        </div>
+        <h1 class="hero-title fade-up fade-up-delay-1">
+          Ciudades más<br>
+          <span class="highlight">inteligentes</span><br>
+          con IA
+        </h1>
+        <p class="hero-description fade-up fade-up-delay-2">
+          Reporta huecos, basura y daños urbanos. Nuestra IA analiza automáticamente 
+          las imágenes y genera reportes técnicos para que las autoridades actúen 
+          de inmediato.
+        </p>
+        <div class="d-flex gap-2 fade-up fade-up-delay-3">
+          <a href="{{ url_for('nuevo_reporte') }}" class="btn-ua btn-primary-ua btn-lg-ua">
+            <i class="fa fa-plus"></i> Crear Reporte
+          </a>
+          <a href="{{ url_for('mapa') }}" class="btn-ua btn-outline-ua btn-lg-ua" style="color:rgba(255,255,255,.8);border-color:rgba(255,255,255,.3);">
+            <i class="fa fa-map"></i> Ver Mapa
+          </a>
+        </div>
+        <div class="hero-stats fade-up">
+          <div>
+            <div class="hero-stat-value">{{ stats.total or '0' }}</div>
+            <div class="hero-stat-label">Reportes totales</div>
+          </div>
+          <div>
+            <div class="hero-stat-value">{{ stats.resueltos or '0' }}</div>
+            <div class="hero-stat-label">Resueltos</div>
+          </div>
+          <div>
+            <div class="hero-stat-value">3</div>
+            <div class="hero-stat-label">Ciudades</div>
+          </div>
+        </div>
+      </div>
+      <!-- Hero Visual -->
+      <div style="position:relative;" class="fade-up fade-up-delay-2">
+        <div style="background:rgba(255,107,0,.06);border:1px solid rgba(255,107,0,.2);border-radius:24px;padding:2rem;backdrop-filter:blur(10px);">
+          <div style="display:flex;align-items:center;gap:.75rem;margin-bottom:1.5rem;">
+            <div style="width:10px;height:10px;background:#FF5F57;border-radius:50%;"></div>
+            <div style="width:10px;height:10px;background:#FEBC2E;border-radius:50%;"></div>
+            <div style="width:10px;height:10px;background:#28C840;border-radius:50%;"></div>
+            <span style="color:rgba(255,255,255,.3);font-size:.8rem;margin-left:.5rem;">Sistema de análisis IA</span>
+          </div>
+          <div style="background:rgba(8,8,8,.75);border-radius:16px;padding:1.1rem 1.2rem;font-family:'JetBrains Mono',monospace;font-size:.75rem;color:rgba(255,255,255,.7);border:1px solid rgba(255,107,0,.18);position:relative;overflow:hidden;backdrop-filter:blur(12px);box-shadow:0 8px 32px rgba(0,0,0,.5),0 0 0 1px rgba(255,107,0,.08);">
+
+            <!-- Barra superior degradada -->
+            <div style="position:absolute;top:0;left:0;right:0;height:1.5px;background:linear-gradient(90deg,transparent 5%,#FF6B00 40%,#FFB347 60%,transparent 95%);"></div>
+
+            <!-- Header compacto -->
+            <div style="display:flex;align-items:center;gap:.5rem;margin-bottom:.85rem;padding-bottom:.7rem;border-bottom:1px solid rgba(255,255,255,.06);">
+              <div style="width:24px;height:24px;background:linear-gradient(135deg,#FF6B00,#FF8C00);border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:.75rem;flex-shrink:0;box-shadow:0 0 12px rgba(255,107,0,.35);">🤖</div>
+              <div style="line-height:1.2;">
+                <div style="color:#fff;font-weight:700;font-size:.72rem;letter-spacing:.08em;">CLAUDE VISION</div>
+                <div style="color:rgba(255,255,255,.28);font-size:.6rem;">claude-sonnet-4 · Anthropic</div>
+              </div>
+              <div style="margin-left:auto;display:flex;align-items:center;gap:.25rem;background:rgba(40,200,64,.1);border:1px solid rgba(40,200,64,.2);border-radius:20px;padding:.15rem .45rem;">
+                <div style="width:5px;height:5px;background:#28C840;border-radius:50%;animation:pdot 1.8s infinite;"></div>
+                <span style="color:#28C840;font-size:.58rem;font-weight:600;">EN LÍNEA</span>
+              </div>
+            </div>
+
+            <!-- Terminal lines -->
+            <div style="color:#4EC9B0;font-size:.72rem;"><span style="color:rgba(255,255,255,.2);">❯ </span>analizando imagen urbana...</div>
+            <div style="margin-top:.25rem;color:rgba(255,255,255,.35);font-size:.7rem;"><span style="color:#569CD6;">modelo</span> <span style="color:#CE9178;">"claude-sonnet-4"</span> <span style="color:#4EC9B0;">✓</span></div>
+
+            <div style="margin:.65rem 0;border-top:1px dashed rgba(255,107,0,.15);"></div>
+
+            <!-- Resultados compactos -->
+            <div style="display:grid;gap:.28rem;">
+              <div><span style="color:var(--naranja);font-size:.68rem;">▸ Detección</span> <span style="color:#fff;font-size:.72rem;">Hueco en calzada</span></div>
+              <div><span style="color:var(--naranja);font-size:.68rem;">▸ Gravedad &nbsp;</span><span style="background:rgba(244,135,113,.12);color:#F48771;padding:.05rem .35rem;border-radius:4px;font-size:.68rem;">87.4% — CRÍTICA</span></div>
+              <div><span style="color:var(--naranja);font-size:.68rem;">▸ Confianza</span> <span style="color:#fff;font-size:.72rem;">94.2%</span></div>
+              <div><span style="color:var(--naranja);font-size:.68rem;">▸ Prioridad &nbsp;</span><span style="color:#F48771;font-size:.72rem;">Atención inmediata</span></div>
+            </div>
+
+            <!-- Confirmación -->
+            <div style="margin-top:.75rem;padding:.45rem .7rem;background:rgba(40,200,64,.07);border:1px solid rgba(40,200,64,.2);border-radius:8px;color:#28C840;font-size:.68rem;display:flex;align-items:center;gap:.4rem;">
+              <span style="font-size:.8rem;">✦</span> Reporte técnico generado automáticamente
+            </div>
+          </div>
+          <style>
+            @keyframes pdot{0%,100%{opacity:1;transform:scale(1);}50%{opacity:.4;transform:scale(1.4);}}
+          </style>
+          <div style="margin-top:1.5rem;display:grid;grid-template-columns:1fr 1fr;gap:1rem;">
+            {% for ciudad_stat in por_ciudad %}
+            <div style="background:rgba(255,255,255,.05);border-radius:10px;padding:.75rem;">
+              <div style="font-size:.7rem;color:rgba(255,255,255,.4);text-transform:uppercase;letter-spacing:.05em;">{{ ciudad_stat.ciudad }}</div>
+              <div style="font-family:'Syne',sans-serif;font-size:1.4rem;font-weight:800;color:var(--naranja);">{{ ciudad_stat.total }}</div>
+              <div style="font-size:.7rem;color:rgba(255,255,255,.4);">{{ ciudad_stat.resueltos or 0 }} resueltos</div>
+            </div>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══ CÓMO FUNCIONA ═══════════════════════════════════════ -->
+<section class="section-ua" id="como-funciona" style="padding: 5rem 0 6rem;">
+  <div class="container-ua">
+    <div class="text-center mb-3">
+      <span class="section-tag">Proceso</span>
+      <h2 class="section-title">¿Cómo funciona Urban Alert?</h2>
+      <p class="section-subtitle" style="margin:0 auto;">
+        En 8 simples pasos, tu reporte llega a quien puede solucionarlo.
+      </p>
+    </div>
+
+    <!-- Fila 1 -->
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:0;margin-top:3.5rem;position:relative;">
+      <!-- Línea conectora fila 1 -->
+      <div style="position:absolute;top:52px;left:calc(12.5% + 16px);right:calc(12.5% + 16px);height:2px;background:linear-gradient(90deg,rgba(255,107,0,.5),rgba(255,107,0,.2));z-index:0;pointer-events:none;"></div>
+
+      {% set fila1 = [
+        ('1','fa-camera','Tomas la foto','El ciudadano fotografía el problema urbano desde su teléfono.'),
+        ('2','fa-location-dot','GPS automático','El sistema captura la ubicación exacta del problema.'),
+        ('3','fa-robot','IA analiza','Nuestra IA detecta el tipo de daño y calcula la gravedad.'),
+        ('4','fa-file-lines','Reporte generado','Se crea un reporte técnico completo automáticamente.'),
+      ] %}
+      {% for num, icon, titulo, desc in fila1 %}
+      <div style="padding:0 1rem;text-align:center;position:relative;z-index:1;">
+        <!-- Número badge -->
+        <div style="display:flex;justify-content:center;margin-bottom:1rem;">
+          <div style="width:104px;height:104px;border-radius:50%;background:rgba(255,107,0,.08);border:2px solid rgba(255,107,0,.25);display:flex;align-items:center;justify-content:center;position:relative;">
+            <i class="fa {{ icon }}" style="font-size:1.8rem;color:var(--naranja);"></i>
+            <div style="position:absolute;top:-4px;right:-4px;width:28px;height:28px;background:var(--naranja);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:.72rem;font-weight:800;color:white;border:2px solid #0d0d0d;">{{ num }}</div>
+          </div>
+        </div>
+        <h4 style="font-size:.95rem;font-weight:700;margin-bottom:.4rem;color:#fff;">{{ titulo }}</h4>
+        <p style="font-size:.8rem;color:rgba(255,255,255,.45);line-height:1.6;max-width:180px;margin:0 auto;">{{ desc }}</p>
+      </div>
+      {% endfor %}
+    </div>
+
+    <!-- Flecha de bajada -->
+    <div style="display:flex;justify-content:center;margin:1.5rem 0;">
+      <div style="width:2px;height:48px;background:linear-gradient(180deg,rgba(255,107,0,.4),rgba(255,107,0,.1));position:relative;">
+        <div style="position:absolute;bottom:-6px;left:50%;transform:translateX(-50%);border-left:6px solid transparent;border-right:6px solid transparent;border-top:8px solid rgba(255,107,0,.4);"></div>
+      </div>
+    </div>
+
+    <!-- Fila 2 — invertida (derecha a izquierda visualmente con flecha) -->
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:0;position:relative;">
+      <!-- Línea conectora fila 2 -->
+      <div style="position:absolute;top:52px;left:calc(12.5% + 16px);right:calc(12.5% + 16px);height:2px;background:linear-gradient(270deg,rgba(255,107,0,.5),rgba(255,107,0,.2));z-index:0;pointer-events:none;"></div>
+
+      {% set fila2 = [
+        ('5','fa-user-tie','Revisión admin','El administrador revisa y aprueba el reporte.'),
+        ('6','fa-wrench','Técnico asignado','Se asigna el técnico más adecuado según zona y especialidad.'),
+        ('7','fa-circle-check','Problema resuelto','El técnico repara el daño y sube evidencias.'),
+        ('8','fa-bell','Notificación','El ciudadano recibe confirmación de la solución.'),
+      ] %}
+      {% for num, icon, titulo, desc in fila2 %}
+      <div style="padding:0 1rem;text-align:center;position:relative;z-index:1;">
+        <div style="display:flex;justify-content:center;margin-bottom:1rem;">
+          <div style="width:104px;height:104px;border-radius:50%;background:rgba(255,107,0,.08);border:2px solid rgba(255,107,0,.25);display:flex;align-items:center;justify-content:center;position:relative;">
+            <i class="fa {{ icon }}" style="font-size:1.8rem;color:var(--naranja);"></i>
+            <div style="position:absolute;top:-4px;right:-4px;width:28px;height:28px;background:var(--naranja);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:.72rem;font-weight:800;color:white;border:2px solid #0d0d0d;">{{ num }}</div>
+          </div>
+        </div>
+        <h4 style="font-size:.95rem;font-weight:700;margin-bottom:.4rem;color:#fff;">{{ titulo }}</h4>
+        <p style="font-size:.8rem;color:rgba(255,255,255,.45);line-height:1.6;max-width:180px;margin:0 auto;">{{ desc }}</p>
+      </div>
+      {% endfor %}
+    </div>
+
+  </div>
+</section>
+
+<!-- ══ REPORTES RECIENTES ══════════════════════════════════ -->
+{% if recientes %}
+<section class="section-ua section-gray">
+  <div class="container-ua">
+    <div class="d-flex justify-between align-center mb-3">
+      <div>
+        <span class="section-tag">Actividad reciente</span>
+        <h2 class="section-title" style="margin-top:.25rem;">Últimos reportes</h2>
+      </div>
+      <a href="{{ url_for('mapa') }}" class="btn-ua btn-outline-ua">
+        Ver todos <i class="fa fa-arrow-right"></i>
+      </a>
+    </div>
+    <div class="grid-3" style="gap:1.5rem;">
+      {% for r in recientes[:6] %}
+      <div class="reporte-card" style="display:flex;flex-direction:column;">
+        <div class="reporte-card-img" style="height:160px;background:{{ r.color or '#FF6B00' }}18;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+          {% if r.imagen_principal %}
+            <img src="{{ url_for('uploaded_file', filename=r.imagen_principal) }}"
+                 alt="{{ r.titulo }}" style="width:100%;height:100%;object-fit:cover;">
+          {% else %}
+            <i class="fa fa-triangle-exclamation" style="font-size:2.2rem;color:{{ r.color or '#FF6B00' }};opacity:.5;"></i>
+          {% endif %}
+        </div>
+        <div class="reporte-card-body" style="flex:1;display:flex;flex-direction:column;padding:1.1rem;">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.6rem;gap:.4rem;">
+            <span class="badge-ua badge-{{ r.estado }}" style="font-size:.68rem;padding:.22rem .65rem;">
+              {{ r.estado.replace('_',' ').title() }}
+            </span>
+            <span style="font-size:.73rem;color:rgba(255,255,255,.35);flex-shrink:0;">
+              <i class="fa fa-location-dot" style="margin-right:.2rem;"></i>{{ r.ciudad }}
+            </span>
+          </div>
+          <h3 class="reporte-card-title" style="font-size:.92rem;margin-bottom:.4rem;line-height:1.4;">{{ r.titulo }}</h3>
+          <div class="reporte-card-meta" style="font-size:.75rem;margin-bottom:.75rem;">
+            <span><i class="fa fa-tag"></i> {{ r.categoria_nombre or 'General' }}</span>
+            {% if r.gravedad_ia %}
+            <span><i class="fa fa-robot"></i> IA: {{ r.gravedad_ia|round(0)|int }}%</span>
+            {% endif %}
+          </div>
+          <a href="{{ url_for('detalle_reporte', reporte_id=r.id) }}"
+             class="btn-ua btn-outline-ua btn-sm-ua w-100 mt-auto" style="text-align:center;">
+            Ver detalle
+          </a>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+{% endif %}
+
+<!-- ══ CIUDADES ════════════════════════════════════════════ -->
+<section class="section-ua" id="ciudades">
+  <div class="container-ua">
+    <div class="text-center mb-3">
+      <span class="section-tag">Cobertura</span>
+      <h2 class="section-title">Ciudades activas</h2>
+    </div>
+    <div class="grid-3" style="gap:2rem;margin-top:2.5rem;">
+      {% set ciudades_info = [
+        ('Facatativá','fa-city','Capital de la Sabana Occidente. Ciudad líder en adopción de tecnología ciudadana.'),
+        ('Madrid','fa-building','Crecimiento acelerado. Infraestructura en constante expansión.'),
+        ('Mosquera','fa-industry','Polo logístico del Occidente. Alta densidad de vías industriales.'),
+      ] %}
+      {% for nombre, icon, desc in ciudades_info %}
+      <div class="card-ua" style="overflow:visible;padding:0;">
+        <div style="background:linear-gradient(135deg,var(--naranja),var(--naranja-dark));padding:2rem;border-radius:var(--radius-lg) var(--radius-lg) 0 0;text-align:center;">
+          <div style="font-size:2rem;margin-bottom:.5rem;color:white;opacity:.9;"><i class="fa {{ icon }}"></i></div>
+          <h3 style="color:white;font-size:1.3rem;">{{ nombre }}</h3>
+        </div>
+        <div class="card-body-ua" style="padding:1.5rem;">
+          <p style="font-size:.875rem;color:var(--gris-3);line-height:1.6;margin-bottom:1rem;">{{ desc }}</p>
+          <a href="{{ url_for('mapa') }}?ciudad={{ nombre }}" class="btn-ua btn-outline-ua btn-sm-ua w-100">
+            Ver reportes en {{ nombre }}
+          </a>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+
+<!-- ══ CTA ════════════════════════════════════════════════ -->
+<section style="background:var(--negro);padding:5rem 0;position:relative;overflow:hidden;">
+  <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:600px;height:600px;background:radial-gradient(circle,rgba(255,107,0,.12) 0%,transparent 70%);pointer-events:none;"></div>
+  <div class="container-ua text-center" style="position:relative;z-index:1;">
+    <span class="section-tag">¡Únete ahora!</span>
+    <h2 class="section-title" style="color:white;margin-top:.5rem;">
+      Sé parte del cambio<br>en tu ciudad
+    </h2>
+    <p style="color:rgba(255,255,255,.5);font-size:1rem;margin:.75rem auto 2rem;max-width:480px;">
+      Regístrate gratis y comienza a reportar problemas urbanos. 
+      Tu ciudad te lo agradecerá.
+    </p>
+    <div class="d-flex gap-2 flex-center">
+      <a href="{{ url_for('registro') }}" class="btn-ua btn-primary-ua btn-lg-ua">
+        <i class="fa fa-user-plus"></i> Crear cuenta gratis
+      </a>
+      <a href="{{ url_for('mapa') }}" class="btn-ua btn-outline-ua btn-lg-ua" style="color:rgba(255,255,255,.8);border-color:rgba(255,255,255,.25);">
+        <i class="fa fa-map-location-dot"></i> Explorar mapa
+      </a>
+    </div>
+  </div>
+</section>
+
+{% endblock %}

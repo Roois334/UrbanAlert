@@ -1,0 +1,178 @@
+{% extends 'admin/base_admin.html' %}
+{% block title %}Dashboard — Admin Urban Alert{% endblock %}
+
+
+
+
+{% block content %}
+<div class="page-body">
+
+  <!-- Banner reportes pendientes (se muestra/oculta por JS) -->
+  <div id="dashAlertaBanner" style="display:none;margin-bottom:1.5rem;padding:.9rem 1.2rem;
+    background:rgba(255,107,0,.1);border:1.5px solid rgba(255,107,0,.35);border-radius:14px;
+    display:flex;align-items:center;gap:1rem;animation:fadeUp .3s ease;">
+    <div style="width:40px;height:40px;border-radius:11px;background:var(--naranja);
+      display:flex;align-items:center;justify-content:center;font-size:1.1rem;color:#fff;flex-shrink:0;">
+      <i class="fa fa-triangle-exclamation"></i>
+    </div>
+    <div style="flex:1;">
+      <div style="font-weight:700;color:#fff;font-size:.9rem;">
+        <span id="dashAlertaNum" style="color:var(--naranja);font-size:1.1rem;margin-right:.3rem;">0</span>
+        reporte(s) pendientes de revisión
+      </div>
+      <div id="dashAlertaDetalle" style="font-size:.78rem;color:rgba(255,255,255,.5);margin-top:.2rem;"></div>
+    </div>
+    <a href="{{ url_for('admin_reportes') }}?estado=pendiente"
+       style="padding:.5rem 1.1rem;background:var(--naranja);color:#fff;border-radius:9px;
+       font-size:.83rem;font-weight:700;text-decoration:none;white-space:nowrap;
+       box-shadow:0 4px 14px rgba(255,107,0,.35);transition:opacity .15s;"
+       onmouseover="this.style.opacity='.85'" onmouseout="this.style.opacity='1'">
+      <i class="fa fa-arrow-right" style="margin-right:.4rem"></i>Revisar ahora
+    </a>
+  </div>
+
+  <!-- KPIs -->
+  <div class="grid-4" style="margin-bottom:2rem;">
+    <div class="stat-card">
+      <div class="stat-icon"><i class="fa fa-flag"></i></div>
+      <div>
+        <div class="stat-value">{{ stats.total or 0 }}</div>
+        <div class="stat-label">Total reportes</div>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon" style="background:rgba(46,125,50,.1);color:#2E7D32;"><i class="fa fa-check-circle"></i></div>
+      <div>
+        <div class="stat-value">{{ stats.resueltos or 0 }}</div>
+        <div class="stat-label">Resueltos</div>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon" style="background:rgba(21,101,192,.1);color:#1565C0;"><i class="fa fa-clock"></i></div>
+      <div>
+        <div class="stat-value" data-kpi="pendientes">{{ stats.pendientes or 0 }}</div>
+        <div class="stat-label">Pendientes</div>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon" style="background:rgba(106,27,154,.1);color:#6A1B9A;"><i class="fa fa-users"></i></div>
+      <div>
+        <div class="stat-value">{{ total_usuarios or 0 }}</div>
+        <div class="stat-label">Usuarios</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="grid-2" style="gap:1.5rem;">
+    <!-- Reportes recientes -->
+    <div class="card-ua">
+      <div class="card-header-ua">
+        <h3 style="font-size:1rem;font-weight:700;">Reportes recientes</h3>
+        <a href="{{ url_for('admin_reportes') }}" class="btn-ua btn-ghost-ua btn-sm-ua">Ver todos</a>
+      </div>
+      <div style="overflow-x:auto;">
+        <table class="table-ua">
+          <thead>
+            <tr>
+              <th>#</th><th>Título</th><th>Ciudad</th><th>Estado</th><th>Acción</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for r in recientes %}
+            <tr>
+              <td style="color:var(--gris-3);font-size:.8rem;">{{ r.id }}</td>
+              <td>
+                <div style="font-weight:600;font-size:.875rem;">{{ r.titulo[:40] }}{% if r.titulo|length > 40 %}…{% endif %}</div>
+                {% if r.gravedad_ia %}<div style="font-size:.72rem;color:var(--gris-3);">IA: {{ r.gravedad_ia|round(0)|int }}%</div>{% endif %}
+              </td>
+              <td style="font-size:.8rem;">{{ r.ciudad }}</td>
+              <td><span class="badge-ua badge-{{ r.estado }}">{{ r.estado.replace('_',' ').title() }}</span></td>
+              <td>
+                <a href="{{ url_for('detalle_reporte', reporte_id=r.id) }}" class="btn-ua btn-ghost-ua btn-sm-ua">
+                  <i class="fa fa-eye"></i>
+                </a>
+              </td>
+            </tr>
+            {% else %}
+            <tr><td colspan="5" style="text-align:center;color:var(--gris-3);padding:2rem;">Sin reportes aún</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Por ciudad -->
+    <div class="card-ua">
+      <div class="card-header-ua">
+        <h3 style="font-size:1rem;font-weight:700;">Reportes por ciudad</h3>
+      </div>
+      <div class="card-body-ua">
+        {% for c in por_ciudad %}
+        <div style="margin-bottom:1.25rem;">
+          <div class="d-flex justify-between align-center" style="margin-bottom:.4rem;">
+            <span style="font-weight:600;font-size:.875rem;">{{ c.ciudad }}</span>
+            <span style="font-size:.8rem;color:var(--gris-3);">{{ c.total }} reportes</span>
+          </div>
+          <div class="ia-score-bar">
+            <div class="ia-score-fill" style="width:{{ [(c.resueltos or 0) * 100 // c.total, 100]|min if c.total else 0 }}%;"></div>
+          </div>
+          <div style="font-size:.72rem;color:var(--gris-3);margin-top:.25rem;">{{ c.resueltos or 0 }} resueltos</div>
+        </div>
+        {% else %}
+        <p style="color:var(--gris-3);text-align:center;padding:2rem 0;">Sin datos aún</p>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+
+</div>
+
+{% block scripts %}
+<script>
+// ── Polling reportes pendientes ──────────────────────────────
+let _dashPendientesAntes = -1;
+
+function dashPollPendientes() {
+  fetch('/admin/api/reportes-pendientes')
+    .then(r => r.json())
+    .then(data => {
+      const n = data.pendientes || 0;
+      const banner = document.getElementById('dashAlertaBanner');
+      const numEl  = document.getElementById('dashAlertaNum');
+      const detEl  = document.getElementById('dashAlertaDetalle');
+
+      numEl.textContent = n;
+
+      if (n > 0) {
+        banner.style.display = 'flex';
+        // Detalle: títulos de los últimos pendientes
+        if (data.ultimos && data.ultimos.length) {
+          detEl.textContent = data.ultimos.slice(0,3).map(r => '#'+r.id+' '+r.titulo.substring(0,30)).join(' · ');
+        }
+        // Si hay nuevos desde la última vez, animar el banner
+        if (_dashPendientesAntes >= 0 && n > _dashPendientesAntes) {
+          banner.style.animation = 'none';
+          banner.offsetHeight; // reflow
+          banner.style.animation = 'fadeUp .4s ease';
+          // También parpadear la campanita del admin
+          const bellBtn = document.getElementById('adBellBtn');
+          if (bellBtn) { bellBtn.style.transform='scale(1.3)'; setTimeout(()=>bellBtn.style.transform='',300); }
+        }
+      } else {
+        banner.style.display = 'none';
+      }
+
+      // Actualizar el KPI de pendientes en el dashboard en tiempo real
+      const kpiPendEl = document.querySelector('[data-kpi="pendientes"]');
+      if (kpiPendEl) kpiPendEl.textContent = n;
+
+      _dashPendientesAntes = n;
+    })
+    .catch(() => {});
+}
+
+dashPollPendientes();
+setInterval(dashPollPendientes, 20000); // cada 20 segundos
+</script>
+{% endblock %}
+{% endblock %}

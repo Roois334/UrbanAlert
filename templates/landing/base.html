@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}Urban Alert — Plataforma de Reportes Urbanos{% endblock %}</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/urban-alert.css') }}">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  {% block head %}{% endblock %}
+</head>
+<body>
+
+<!-- Navbar -->
+<nav class="navbar-ua" id="mainNav">
+  <a href="{{ url_for('index') }}" class="navbar-brand">
+    <img src="{{ url_for('static', filename='images/logo.png') }}" alt="UrbanAlert" style="height:64px;width:auto;object-fit:contain;filter:drop-shadow(0 0 10px rgba(255,107,0,0.7));">Urban<span class="accent">Alert</span>
+  </a>
+  <ul class="navbar-nav-ua">
+    <li><a href="{{ url_for('index') }}" {% if request.endpoint == 'landing.index' %}class="active"{% endif %}>Inicio</a></li>
+    <li><a href="{{ url_for('mapa') }}" {% if request.endpoint == 'mapa' %}class="active"{% endif %}>Mapa</a></li>
+    <li><a href="{{ url_for('index') }}#ciudades">Ciudades</a></li>
+    <li><a href="{{ url_for('index') }}#como-funciona">¿Cómo funciona?</a></li>
+  </ul>
+  <div class="navbar-actions">
+    {% if session.usuario_id %}
+      {% if session.rol in ('administrador', 'super_admin') %}
+        <a href="{{ url_for('admin_dashboard') }}" class="btn-ua btn-ghost-ua btn-sm-ua">
+          <i class="fa fa-gauge"></i> {{ session.nombre }}
+        </a>
+      {% elif session.rol == 'tecnico' %}
+        <a href="{{ url_for('tecnico_dashboard') }}" class="btn-ua btn-ghost-ua btn-sm-ua">
+          <i class="fa fa-wrench"></i> {{ session.nombre }}
+        </a>
+      {% else %}
+        <a href="{{ url_for('ciudadano_dashboard') }}" class="btn-ua btn-ghost-ua btn-sm-ua">
+          <i class="fa fa-user"></i> {{ session.nombre }}
+        </a>
+      {% endif %}
+      <a href="{{ url_for('logout') }}" class="btn-ua btn-outline-ua btn-sm-ua">Salir</a>
+    {% else %}
+      <a href="{{ url_for('login') }}" class="btn-ua btn-ghost-ua btn-sm-ua">Iniciar sesión</a>
+      <a href="{{ url_for('registro') }}" class="btn-ua btn-primary-ua btn-sm-ua">
+        <i class="fa fa-user-plus"></i> Registrarse
+      </a>
+    {% endif %}
+  </div>
+</nav>
+
+<!-- Flash Messages -->
+{% with messages = get_flashed_messages(with_categories=true) %}
+  {% if messages %}
+  <div style="position:fixed;top:80px;right:1.5rem;z-index:9999;min-width:300px;max-width:400px;">
+    {% for category, message in messages %}
+    <div class="alert-ua alert-{{ category }}" style="margin-bottom:.5rem;animation:fadeUp .4s ease both;">
+      <i class="fa fa-circle-info"></i> {{ message }}
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+{% endwith %}
+
+{% block content %}{% endblock %}
+
+<!-- Footer Premium -->
+<footer class="footer-premium">
+
+  <!-- Cuerpo principal -->
+  <div class="footer-body">
+    <div class="container-ua">
+      <div class="footer-grid-main">
+
+        <!-- Columna 1 – Marca -->
+        <div class="footer-col-brand">
+          <div class="footer-logo">
+            <div class="footer-logo-icon">
+              <i class="fa-solid fa-triangle-exclamation"></i>
+            </div>
+            <span class="footer-logo-name">Urban<em>Alert</em></span>
+          </div>
+          <p class="footer-tagline">
+            Plataforma inteligente para detectar, reportar y gestionar problemas urbanos con Inteligencia Artificial.
+          </p>
+
+          <!-- Ciudades activas -->
+          <div class="footer-cities-label">Ciudades activas</div>
+          <div class="footer-cities-pills">
+            <span class="fp-pill"><i class="fa fa-location-dot"></i> Facatativá</span>
+            <span class="fp-pill"><i class="fa fa-location-dot"></i> Madrid</span>
+            <span class="fp-pill"><i class="fa fa-location-dot"></i> Mosquera</span>
+          </div>
+
+          <!-- Redes sociales -->
+          <div class="footer-social">
+            <a href="https://wa.me/573025554151" target="_blank" rel="noopener" class="fs-btn wa" title="WhatsApp">
+              <i class="fa-brands fa-whatsapp"></i>
+            </a>
+            <a href="#" class="fs-btn ig" title="Instagram">
+              <i class="fa-brands fa-instagram"></i>
+            </a>
+            <a href="#" class="fs-btn fb" title="Facebook">
+              <i class="fa-brands fa-facebook-f"></i>
+            </a>
+            <a href="#" class="fs-btn tw" title="X / Twitter">
+              <i class="fa-brands fa-x-twitter"></i>
+            </a>
+          </div>
+        </div>
+
+        <!-- Columna 2 – Plataforma -->
+        <div class="footer-col">
+          <div class="footer-col-title"><i class="fa fa-layer-group"></i> Plataforma</div>
+          <ul class="fp-links">
+            <li><a href="{{ url_for('index') }}"><i class="fa fa-chevron-right"></i> Inicio</a></li>
+            <li><a href="{{ url_for('mapa') }}"><i class="fa fa-chevron-right"></i> Mapa de reportes</a></li>
+            <li><a href="{{ url_for('nuevo_reporte') }}"><i class="fa fa-chevron-right"></i> Crear reporte</a></li>
+            <li><a href="{{ url_for('registro') }}"><i class="fa fa-chevron-right"></i> Registrarse</a></li>
+            <li><a href="{{ url_for('login') }}"><i class="fa fa-chevron-right"></i> Iniciar sesión</a></li>
+          </ul>
+        </div>
+
+        <!-- Columna 3 – Tecnología -->
+        <div class="footer-col">
+          <div class="footer-col-title"><i class="fa fa-microchip"></i> Tecnología</div>
+          <ul class="fp-links">
+            <li><a href="#"><i class="fa fa-chevron-right"></i> IA con Claude Vision</a></li>
+            <li><a href="#"><i class="fa fa-chevron-right"></i> Mapa interactivo</a></li>
+            <li><a href="#"><i class="fa fa-chevron-right"></i> Alertas en tiempo real</a></li>
+            <li><a href="#"><i class="fa fa-chevron-right"></i> Análisis predictivo</a></li>
+            <li><a href="#"><i class="fa fa-chevron-right"></i> API REST</a></li>
+          </ul>
+        </div>
+
+        <!-- Columna 4 – Contacto rápido -->
+        <div class="footer-col">
+          <div class="footer-col-title"><i class="fa fa-headset"></i> Contacto rápido</div>
+          <div class="fp-contact-list">
+            <a href="https://wa.me/573025554151" target="_blank" rel="noopener" class="fp-contact-item">
+              <span class="fpc-icon wa"><i class="fa-brands fa-whatsapp"></i></span>
+              <div>
+                <div class="fpc-label">WhatsApp</div>
+                <div class="fpc-value">+57 302 555 4151</div>
+              </div>
+            </a>
+            <a href="mailto:contacto@urbanalert.co" class="fp-contact-item">
+              <span class="fpc-icon em"><i class="fa fa-envelope"></i></span>
+              <div>
+                <div class="fpc-label">Correo</div>
+                <div class="fpc-value">contacto@urbanalert.co</div>
+              </div>
+            </a>
+            <div class="fp-contact-item" style="cursor:default;">
+              <span class="fpc-icon lo"><i class="fa fa-clock"></i></span>
+              <div>
+                <div class="fpc-label">Atención</div>
+                <div class="fpc-value">Lun – Vie · 7am – 7pm</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Badge IA -->
+          <div class="fp-ai-badge">
+            <i class="fa fa-bolt"></i> Impulsado por Inteligencia Artificial
+          </div>
+        </div>
+
+      </div><!-- /footer-grid-main -->
+    </div>
+  </div><!-- /footer-body -->
+
+  <!-- Barra inferior -->
+  <div class="footer-bottom-bar">
+    <div class="container-ua">
+      <div class="fbb-inner">
+        <span>© 2025 <strong>Urban Alert</strong> · Todos los derechos reservados</span>
+        <div class="fbb-cities">
+          <i class="fa fa-city"></i> Facatativá · Madrid · Mosquera
+        </div>
+        <span class="fbb-made">
+          Hecho con <i class="fa fa-heart" style="color:#e74c3c;"></i> en Colombia
+        </span>
+      </div>
+    </div>
+  </div>
+
+</footer>
+
+<style>
+/* ═══════════════════════════════════════════
+   FOOTER PREMIUM – UrbanAlert
+═══════════════════════════════════════════ */
+.footer-premium {
+  background: #0a0a0a;
+  color: rgba(255,255,255,.65);
+  font-size: .875rem;
+  margin-top: 4rem;
+}
+
+/* ── Barra WhatsApp ── */
+.footer-whatsapp-bar {
+  background: linear-gradient(135deg, #1a5c2a 0%, #128c3e 60%, #25d366 100%);
+  padding: 1.1rem 0;
+}
+.fwb-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1.5rem;
+  flex-wrap: wrap;
+}
+.fwb-text {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  color: #fff;
+}
+.fwb-icon {
+  font-size: 2rem;
+  flex-shrink: 0;
+  filter: drop-shadow(0 0 8px rgba(255,255,255,.4));
+}
+.fwb-text strong { display: block; font-size: 1rem; }
+.fwb-text span   { font-size: .82rem; opacity: .9; }
+.fwb-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: .5rem;
+  background: #fff;
+  color: #128c3e !important;
+  font-weight: 700;
+  font-size: .875rem;
+  padding: .65rem 1.4rem;
+  border-radius: 99px;
+  white-space: nowrap;
+  transition: transform .2s, box-shadow .2s;
+  text-decoration: none !important;
+}
+.fwb-btn:hover {
+  transform: scale(1.04);
+  box-shadow: 0 4px 20px rgba(0,0,0,.25);
+}
+
+/* ── Cuerpo ── */
+.footer-body {
+  padding: 4rem 0 2.5rem;
+  border-bottom: 1px solid rgba(255,255,255,.06);
+}
+.footer-grid-main {
+  display: grid;
+  grid-template-columns: 1.8fr 1fr 1fr 1.3fr;
+  gap: 3rem;
+}
+
+/* Columna marca */
+.footer-logo {
+  display: flex;
+  align-items: center;
+  gap: .7rem;
+  margin-bottom: 1rem;
+}
+.footer-logo-icon {
+  width: 38px; height: 38px;
+  background: linear-gradient(135deg, var(--naranja), var(--naranja-dark));
+  border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1rem; color: #fff;
+  box-shadow: 0 4px 15px rgba(255,107,0,.4);
+}
+.footer-logo-name {
+  font-family: var(--font-display);
+  font-size: 1.3rem;
+  font-weight: 800;
+  color: #fff;
+}
+.footer-logo-name em {
+  font-style: normal;
+  color: var(--naranja);
+}
+.footer-tagline {
+  font-size: .84rem;
+  line-height: 1.75;
+  max-width: 260px;
+  margin-bottom: 1.25rem;
+}
+
+.footer-cities-label {
+  font-size: .7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  color: rgba(255,255,255,.3);
+  margin-bottom: .5rem;
+}
+.footer-cities-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .4rem;
+  margin-bottom: 1.4rem;
+}
+.fp-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: .3rem;
+  background: rgba(255,107,0,.12);
+  border: 1px solid rgba(255,107,0,.25);
+  color: var(--naranja-light);
+  padding: .2rem .65rem;
+  border-radius: 99px;
+  font-size: .72rem;
+  font-weight: 600;
+}
+
+/* Redes */
+.footer-social {
+  display: flex;
+  gap: .5rem;
+}
+.fs-btn {
+  width: 36px; height: 36px;
+  border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: .9rem;
+  color: #fff !important;
+  text-decoration: none !important;
+  transition: transform .2s, box-shadow .2s;
+}
+.fs-btn:hover { transform: translateY(-3px); }
+.fs-btn.wa { background: #25d366; box-shadow: 0 4px 12px rgba(37,211,102,.3); }
+.fs-btn.ig { background: linear-gradient(135deg,#f09433,#e6683c,#dc2743,#cc2366,#bc1888); box-shadow: 0 4px 12px rgba(220,39,67,.3); }
+.fs-btn.fb { background: #1877f2; box-shadow: 0 4px 12px rgba(24,119,242,.3); }
+.fs-btn.tw { background: #000; border: 1px solid rgba(255,255,255,.15); box-shadow: 0 4px 12px rgba(0,0,0,.4); }
+
+/* Columnas internas */
+.footer-col-title {
+  font-size: .78rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  color: var(--naranja);
+  margin-bottom: 1.1rem;
+  display: flex;
+  align-items: center;
+  gap: .45rem;
+}
+.fp-links {
+  list-style: none;
+  padding: 0; margin: 0;
+}
+.fp-links li { margin-bottom: .55rem; }
+.fp-links a {
+  color: rgba(255,255,255,.5);
+  font-size: .84rem;
+  text-decoration: none;
+  display: flex;
+  align-items: center;
+  gap: .4rem;
+  transition: color .2s, gap .2s;
+}
+.fp-links a i { font-size: .6rem; color: rgba(255,107,0,.5); transition: color .2s; }
+.fp-links a:hover { color: #fff; }
+.fp-links a:hover i { color: var(--naranja); }
+.fp-links a:hover { gap: .55rem; }
+
+/* Contacto */
+.fp-contact-list { display: flex; flex-direction: column; gap: .75rem; margin-bottom: 1.25rem; }
+.fp-contact-item {
+  display: flex;
+  align-items: center;
+  gap: .75rem;
+  text-decoration: none !important;
+  color: rgba(255,255,255,.6) !important;
+  transition: color .2s;
+}
+a.fp-contact-item:hover { color: #fff !important; }
+.fpc-icon {
+  width: 36px; height: 36px;
+  border-radius: 9px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: .95rem;
+  flex-shrink: 0;
+}
+.fpc-icon.wa { background: rgba(37,211,102,.15); color: #25d366; }
+.fpc-icon.em { background: rgba(255,107,0,.15);  color: var(--naranja); }
+.fpc-icon.lo { background: rgba(255,255,255,.08); color: rgba(255,255,255,.5); }
+.fpc-label { font-size: .7rem; opacity: .5; text-transform: uppercase; letter-spacing: .05em; }
+.fpc-value { font-size: .84rem; font-weight: 600; color: #fff; }
+
+.fp-ai-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: .4rem;
+  background: rgba(255,107,0,.1);
+  border: 1px solid rgba(255,107,0,.2);
+  color: var(--naranja);
+  font-size: .75rem;
+  font-weight: 700;
+  padding: .35rem .8rem;
+  border-radius: 99px;
+}
+
+/* ── Barra inferior ── */
+.footer-bottom-bar {
+  padding: 1.1rem 0;
+  background: #050505;
+}
+.fbb-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+  font-size: .78rem;
+}
+.fbb-cities { color: rgba(255,255,255,.35); }
+.fbb-cities i { color: var(--naranja); margin-right: .3rem; }
+.fbb-made { color: rgba(255,255,255,.4); }
+
+/* ── Responsive ── */
+@media (max-width: 900px) {
+  .footer-grid-main {
+    grid-template-columns: 1fr 1fr;
+    gap: 2rem;
+  }
+  .footer-col-brand { grid-column: 1 / -1; }
+}
+@media (max-width: 580px) {
+  .footer-grid-main { grid-template-columns: 1fr; }
+  .fwb-inner { flex-direction: column; text-align: center; }
+  .fwb-text { flex-direction: column; text-align: center; }
+  .fbb-inner { flex-direction: column; text-align: center; gap: .5rem; }
+}
+</style>
+
+<script>
+  // Navbar scroll effect
+  window.addEventListener('scroll', () => {
+    document.getElementById('mainNav').classList.toggle('scrolled', window.scrollY > 30);
+  });
+  // Auto-dismiss flash messages
+  setTimeout(() => {
+    document.querySelectorAll('.alert-ua').forEach(el => {
+      el.style.transition = 'opacity .4s';
+      el.style.opacity = '0';
+      setTimeout(() => el.remove(), 400);
+    });
+  }, 4000);
+</script>
+{% block scripts %}{% endblock %}
+</body>
+</html>

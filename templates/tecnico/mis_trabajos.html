@@ -1,0 +1,514 @@
+{% extends 'tecnico/base_tecnico.html' %}
+{% block title %}Mis Trabajos — Urban Alert{% endblock %}
+
+{% block content %}
+<style>
+  /* ── PAGE HEADER ── */
+  .mt-header {
+    display: flex; align-items: flex-end; justify-content: space-between;
+    margin-bottom: 1.75rem; flex-wrap: wrap; gap: 1rem;
+  }
+  .mt-header-left h1 {
+    font-size: 1.6rem; font-weight: 900; color: #fff;
+    letter-spacing: -.03em; margin: 0 0 .25rem;
+    display: flex; align-items: center; gap: .6rem;
+  }
+  .mt-header-left h1 i { color: #FF6B00; font-size: 1.3rem; }
+  .mt-header-left p { color: rgba(255,255,255,.35); font-size: .84rem; margin: 0; }
+
+  /* ── KPI STRIP ── */
+  .mt-kpi-strip { display: flex; gap: .75rem; margin-bottom: 1.5rem; flex-wrap: wrap; }
+  .mt-kpi {
+    flex: 1; min-width: 110px;
+    background: linear-gradient(145deg,#181818,#141414);
+    border: 1px solid rgba(255,255,255,.07);
+    border-radius: 14px; padding: 1rem 1.2rem;
+    position: relative; overflow: hidden;
+  }
+  .mt-kpi::after {
+    content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+  }
+  .mt-kpi.k-total::after  { background: linear-gradient(90deg,#FF6B00,#ff8c35); }
+  .mt-kpi.k-activo::after { background: linear-gradient(90deg,#3498db,#1565c0); }
+  .mt-kpi.k-resuelto::after { background: linear-gradient(90deg,#2ecc71,#27ae60); }
+  .mt-kpi.k-pendiente::after { background: linear-gradient(90deg,#9b59b6,#6c3483); }
+  .mt-kpi-val { font-size: 2rem; font-weight: 900; line-height: 1; margin-bottom: .2rem; }
+  .mt-kpi.k-total    .mt-kpi-val { color: #FF6B00; }
+  .mt-kpi.k-activo   .mt-kpi-val { color: #3498db; }
+  .mt-kpi.k-resuelto .mt-kpi-val { color: #2ecc71; }
+  .mt-kpi.k-pendiente .mt-kpi-val { color: #9b59b6; }
+  .mt-kpi-lbl { font-size: .68rem; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: rgba(255,255,255,.3); }
+
+  /* ── FILTROS ── */
+  .mt-filters {
+    background: linear-gradient(145deg,#181818,#141414);
+    border: 1px solid rgba(255,255,255,.07);
+    border-radius: 16px; padding: 1.1rem 1.4rem;
+    margin-bottom: 1.25rem;
+    display: flex; align-items: center; gap: .75rem; flex-wrap: wrap;
+  }
+  .mt-search-wrap {
+    flex: 1; min-width: 200px;
+    position: relative;
+  }
+  .mt-search-wrap i {
+    position: absolute; left: .85rem; top: 50%; transform: translateY(-50%);
+    color: rgba(255,255,255,.25); font-size: .85rem; pointer-events: none;
+  }
+  .mt-search {
+    width: 100%; background: rgba(255,255,255,.05);
+    border: 1px solid rgba(255,255,255,.1); border-radius: 10px;
+    padding: .55rem .9rem .55rem 2.2rem;
+    color: #fff; font-size: .84rem; outline: none;
+    transition: border-color .18s;
+  }
+  .mt-search:focus { border-color: rgba(255,107,0,.4); }
+  .mt-search::placeholder { color: rgba(255,255,255,.25); }
+
+  .mt-select {
+    background: rgba(255,255,255,.05); border: 1px solid rgba(255,255,255,.1);
+    border-radius: 10px; padding: .55rem .9rem;
+    color: rgba(255,255,255,.7); font-size: .82rem; cursor: pointer;
+    outline: none; transition: border-color .18s; min-width: 130px;
+  }
+  .mt-select:focus { border-color: rgba(255,107,0,.4); }
+  .mt-select option { background: #1c1c1c; }
+
+  .mt-filter-count {
+    font-size: .75rem; color: rgba(255,255,255,.3); white-space: nowrap;
+    padding: .45rem .9rem; background: rgba(255,255,255,.04);
+    border: 1px solid rgba(255,255,255,.07); border-radius: 8px;
+  }
+  .mt-filter-count span { color: #FF6B00; font-weight: 700; }
+
+  .mt-clear-btn {
+    padding: .45rem .9rem; font-size: .76rem; font-weight: 700;
+    background: rgba(231,76,60,.08); border: 1px solid rgba(231,76,60,.2);
+    border-radius: 8px; color: #e74c3c; cursor: pointer;
+    display: none; align-items: center; gap: .35rem; transition: all .15s;
+  }
+  .mt-clear-btn:hover { background: rgba(231,76,60,.15); }
+  .mt-clear-btn.visible { display: flex; }
+
+  /* ── TABLA CARD ── */
+  .mt-table-card {
+    background: linear-gradient(145deg,#181818,#141414);
+    border: 1px solid rgba(255,255,255,.07);
+    border-radius: 16px; overflow: hidden;
+  }
+  .mt-table-head {
+    padding: .9rem 1.4rem;
+    border-bottom: 1px solid rgba(255,255,255,.07);
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .mt-table-head h3 {
+    font-size: .88rem; font-weight: 700; color: #fff;
+    display: flex; align-items: center; gap: .5rem; margin: 0;
+  }
+  .mt-table-head h3 i { color: #FF6B00; }
+
+  /* Ordenar por */
+  .mt-sort-btn {
+    display: flex; align-items: center; gap: .4rem;
+    font-size: .75rem; font-weight: 600; color: rgba(255,255,255,.4);
+    background: none; border: none; cursor: pointer;
+    padding: .3rem .6rem; border-radius: 6px; transition: all .15s;
+  }
+  .mt-sort-btn:hover { color: #fff; background: rgba(255,255,255,.06); }
+  .mt-sort-btn.asc  i.fa-sort-down  { display: none; }
+  .mt-sort-btn.desc i.fa-sort-up    { display: none; }
+
+  .mt-tbl { width: 100%; border-collapse: collapse; }
+  .mt-tbl th {
+    padding: .65rem 1.2rem;
+    font-size: .65rem; font-weight: 700; text-transform: uppercase;
+    letter-spacing: .08em; color: #FF6B00;
+    border-bottom: 1px solid rgba(255,255,255,.07);
+    text-align: left; white-space: nowrap; cursor: pointer;
+    user-select: none; transition: color .15s;
+  }
+  .mt-tbl th:hover { color: #ff8c35; }
+  .mt-tbl th .sort-icon { margin-left: .3rem; opacity: .4; font-size: .6rem; }
+  .mt-tbl th.sorted .sort-icon { opacity: 1; color: #fff; }
+
+  .mt-tbl td {
+    padding: .85rem 1.2rem;
+    border-bottom: 1px solid rgba(255,255,255,.04);
+    font-size: .83rem; color: rgba(255,255,255,.75);
+    vertical-align: middle;
+  }
+  .mt-tbl tr:last-child td { border-bottom: none; }
+  .mt-tbl tbody tr { transition: background .12s; }
+  .mt-tbl tbody tr:hover { background: rgba(255,107,0,.04); }
+
+  .t-id { color: rgba(255,255,255,.25) !important; font-size: .73rem !important; font-weight: 600; }
+  .t-title { font-weight: 700; color: #fff; max-width: 220px; }
+  .t-title-main { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .t-title-sub { font-size: .7rem; color: rgba(255,255,255,.28); margin-top: .15rem; display: flex; align-items: center; gap: .25rem; }
+  .t-title-sub i { color: #FF6B00; font-size: .6rem; }
+
+  /* Badges */
+  .ub { display: inline-flex; align-items: center; padding: .22rem .65rem; border-radius: 99px; font-size: .7rem; font-weight: 700; white-space: nowrap; }
+  .ub-resuelto    { background: rgba(46,204,113,.15);  color: #2ecc71; }
+  .ub-pendiente   { background: rgba(255,193,7,.12);   color: #ffc107; }
+  .ub-en_progreso { background: rgba(52,152,219,.15);  color: #3498db; }
+  .ub-asignado    { background: rgba(156,39,176,.12);  color: #ce93d8; }
+  .ub-critica     { background: rgba(231,76,60,.15);   color: #e74c3c; }
+  .ub-alta        { background: rgba(255,107,0,.12);   color: #FF6B00; }
+  .ub-media       { background: rgba(255,193,7,.12);   color: #ffc107; }
+  .ub-baja        { background: rgba(52,152,219,.12);  color: #3498db; }
+
+  /* Botones acción */
+  .mt-btn {
+    padding: .35rem .75rem; font-size: .72rem; font-weight: 700;
+    border-radius: 8px; cursor: pointer; border: 1px solid;
+    display: inline-flex; align-items: center; gap: .3rem; transition: all .15s;
+  }
+  .mt-btn-blue  { background: rgba(52,152,219,.1);  border-color: rgba(52,152,219,.3);  color: #3498db; }
+  .mt-btn-blue:hover  { background: rgba(52,152,219,.22); }
+  .mt-btn-green { background: rgba(46,204,113,.1);  border-color: rgba(46,204,113,.3);  color: #2ecc71; }
+  .mt-btn-green:hover { background: rgba(46,204,113,.22); }
+  .mt-btn-view  { background: rgba(255,255,255,.05); border-color: rgba(255,255,255,.1); color: rgba(255,255,255,.45); }
+  .mt-btn-view:hover  { background: rgba(255,255,255,.1); color: #fff; }
+
+  /* Empty state */
+  .mt-empty {
+    text-align: center; padding: 4rem 2rem;
+  }
+  .mt-empty-icon {
+    width: 64px; height: 64px; border-radius: 20px;
+    background: rgba(255,107,0,.06); border: 1px solid rgba(255,107,0,.1);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.6rem; color: rgba(255,107,0,.3);
+    margin: 0 auto 1rem;
+  }
+  .mt-empty h4 { font-size: 1rem; color: rgba(255,255,255,.35); font-weight: 700; margin: 0 0 .4rem; }
+  .mt-empty p  { font-size: .82rem; color: rgba(255,255,255,.2); margin: 0; }
+
+  /* Fecha */
+  .t-date { font-size: .74rem; color: rgba(255,255,255,.3); white-space: nowrap; }
+
+  /* Paginación */
+  .mt-pagination {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: .9rem 1.4rem; border-top: 1px solid rgba(255,255,255,.06);
+    flex-wrap: wrap; gap: .5rem;
+  }
+  .mt-page-info { font-size: .75rem; color: rgba(255,255,255,.3); }
+  .mt-page-info span { color: rgba(255,255,255,.6); font-weight: 600; }
+  .mt-page-btns { display: flex; gap: .35rem; }
+  .mt-page-btn {
+    width: 32px; height: 32px; border-radius: 8px; font-size: .78rem; font-weight: 700;
+    background: rgba(255,255,255,.05); border: 1px solid rgba(255,255,255,.08);
+    color: rgba(255,255,255,.5); cursor: pointer; display: flex; align-items: center;
+    justify-content: center; transition: all .15s;
+  }
+  .mt-page-btn:hover { background: rgba(255,107,0,.1); border-color: rgba(255,107,0,.2); color: #FF6B00; }
+  .mt-page-btn.active { background: rgba(255,107,0,.15); border-color: rgba(255,107,0,.3); color: #FF6B00; }
+  .mt-page-btn:disabled { opacity: .3; cursor: default; pointer-events: none; }
+
+  @media(max-width:700px){
+    .mt-kpi-strip { gap: .5rem; }
+    .mt-kpi { min-width: 80px; padding: .75rem .9rem; }
+    .mt-tbl th:nth-child(3),
+    .mt-tbl td:nth-child(3),
+    .mt-tbl th:nth-child(4),
+    .mt-tbl td:nth-child(4) { display: none; }
+  }
+</style>
+
+{# ── Stats para KPIs ── #}
+{% set total      = trabajos|length %}
+{% set resueltos  = trabajos|selectattr('estado','equalto','resuelto')|list %}
+{% set activos    = trabajos|selectattr('estado','in',['en_progreso'])|list %}
+{% set pendientes = trabajos|selectattr('estado','equalto','asignado')|list %}
+
+<!-- ══ PAGE HEADER ══ -->
+<div class="mt-header">
+  <div class="mt-header-left">
+    <h1><i class="fa fa-briefcase"></i> Mis Trabajos</h1>
+    <p>Gestiona y filtra todos tus reportes asignados</p>
+  </div>
+</div>
+
+<!-- ══ KPI STRIP ══ -->
+<div class="mt-kpi-strip">
+  <div class="mt-kpi k-total">
+    <div class="mt-kpi-val">{{ total }}</div>
+    <div class="mt-kpi-lbl">Total</div>
+  </div>
+  <div class="mt-kpi k-activo">
+    <div class="mt-kpi-val">{{ activos|length }}</div>
+    <div class="mt-kpi-lbl">En progreso</div>
+  </div>
+  <div class="mt-kpi k-pendiente">
+    <div class="mt-kpi-val">{{ pendientes|length }}</div>
+    <div class="mt-kpi-lbl">Por iniciar</div>
+  </div>
+  <div class="mt-kpi k-resuelto">
+    <div class="mt-kpi-val">{{ resueltos|length }}</div>
+    <div class="mt-kpi-lbl">Resueltos</div>
+  </div>
+</div>
+
+<!-- ══ FILTROS ══ -->
+<div class="mt-filters">
+  <div class="mt-search-wrap">
+    <i class="fa fa-magnifying-glass"></i>
+    <input type="text" class="mt-search" id="mtSearch" placeholder="Buscar por título, ciudad, categoría…" oninput="mtFilter()">
+  </div>
+  <select class="mt-select" id="mtEstado" onchange="mtFilter()">
+    <option value="">Todos los estados</option>
+    <option value="asignado">Por iniciar</option>
+    <option value="en_progreso">En progreso</option>
+    <option value="resuelto">Resuelto</option>
+  </select>
+  <select class="mt-select" id="mtPrioridad" onchange="mtFilter()">
+    <option value="">Todas las prioridades</option>
+    <option value="critica">Crítica</option>
+    <option value="alta">Alta</option>
+    <option value="media">Media</option>
+    <option value="baja">Baja</option>
+  </select>
+  <select class="mt-select" id="mtCategoria" onchange="mtFilter()">
+    <option value="">Todas las categorías</option>
+    {% set cats = [] %}
+    {% for r in trabajos %}
+      {% if r.categoria_nombre and r.categoria_nombre not in cats %}
+        {% set _ = cats.append(r.categoria_nombre) %}
+        <option value="{{ r.categoria_nombre }}">{{ r.categoria_nombre }}</option>
+      {% endif %}
+    {% endfor %}
+  </select>
+  <div class="mt-filter-count" id="mtCount"><span id="mtCountNum">{{ total }}</span> de {{ total }}</div>
+  <button class="mt-clear-btn" id="mtClearBtn" onclick="mtClearFilters()"><i class="fa fa-xmark"></i> Limpiar</button>
+</div>
+
+<!-- ══ TABLA ══ -->
+<div class="mt-table-card">
+  <div class="mt-table-head">
+    <h3><i class="fa fa-table-list"></i> Listado de trabajos</h3>
+    <div style="display:flex;gap:.5rem;align-items:center;">
+      <span style="font-size:.72rem;color:rgba(255,255,255,.25);">Ordenar por:</span>
+      <button class="mt-sort-btn" id="sortFecha" onclick="mtSort('fecha')">
+        Fecha <i class="fa fa-sort-up"></i><i class="fa fa-sort-down"></i>
+      </button>
+      <button class="mt-sort-btn" id="sortPrioridad" onclick="mtSort('prioridad')">
+        Prioridad <i class="fa fa-sort-up"></i><i class="fa fa-sort-down"></i>
+      </button>
+    </div>
+  </div>
+
+  <div style="overflow-x:auto;">
+    <table class="mt-tbl">
+      <thead>
+        <tr>
+          <th onclick="mtSort('id')">#<i class="fa fa-sort sort-icon"></i></th>
+          <th onclick="mtSort('titulo')">Título<i class="fa fa-sort sort-icon"></i></th>
+          <th onclick="mtSort('categoria')">Categoría<i class="fa fa-sort sort-icon"></i></th>
+          <th onclick="mtSort('ciudad')">Ciudad<i class="fa fa-sort sort-icon"></i></th>
+          <th onclick="mtSort('prioridad')">Prioridad<i class="fa fa-sort sort-icon"></i></th>
+          <th onclick="mtSort('estado')">Estado<i class="fa fa-sort sort-icon"></i></th>
+          <th onclick="mtSort('fecha')">Fecha<i class="fa fa-sort sort-icon"></i></th>
+          <th>Acciones</th>
+        </tr>
+      </thead>
+      <tbody id="mtTbody">
+        {% for r in trabajos %}
+        <tr class="mt-row"
+            data-titulo="{{ r.titulo|lower }}"
+            data-ciudad="{{ r.ciudad|lower }}"
+            data-categoria="{{ (r.categoria_nombre or '')|lower }}"
+            data-estado="{{ r.estado }}"
+            data-prioridad="{{ r.prioridad }}"
+            data-id="{{ r.id }}"
+            data-fecha="{{ r.creado_en }}">
+          <td class="t-id">#{{ r.id }}</td>
+          <td class="t-title">
+            <div class="t-title-main" title="{{ r.titulo }}">{{ r.titulo }}</div>
+            {% if r.direccion %}
+            <div class="t-title-sub"><i class="fa fa-location-dot"></i> {{ r.direccion[:45] }}</div>
+            {% endif %}
+          </td>
+          <td style="color:rgba(255,255,255,.45);font-size:.79rem;">{{ r.categoria_nombre or '—' }}</td>
+          <td style="font-size:.8rem;">{{ r.ciudad }}</td>
+          <td><span class="ub ub-{{ r.prioridad }}">{{ r.prioridad.title() }}</span></td>
+          <td><span class="ub ub-{{ r.estado }}">{{ r.estado.replace('_',' ').title() }}</span></td>
+          <td class="t-date">
+            {% if r.creado_en %}
+              {{ r.creado_en.strftime('%d/%m/%Y') if r.creado_en else '—' }}
+            {% else %}—{% endif %}
+          </td>
+          <td>
+            <div style="display:flex;gap:.3rem;flex-wrap:wrap;">
+              {% if r.estado == 'asignado' %}
+              <form method="POST" action="{{ url_for('tecnico_en_progreso', reporte_id=r.id) }}" style="margin:0;">
+                <button class="mt-btn mt-btn-blue"><i class="fa fa-play"></i> Iniciar</button>
+              </form>
+              <form method="POST" action="{{ url_for('tecnico_resolver', reporte_id=r.id) }}" style="margin:0;">
+                <button class="mt-btn mt-btn-green"><i class="fa fa-check"></i> Resolver</button>
+              </form>
+              {% elif r.estado == 'en_progreso' %}
+              <form method="POST" action="{{ url_for('tecnico_resolver', reporte_id=r.id) }}" style="margin:0;">
+                <button class="mt-btn mt-btn-green"><i class="fa fa-check"></i> Resolver</button>
+              </form>
+              {% else %}
+              <span style="color:rgba(255,255,255,.2);font-size:.75rem;"><i class="fa fa-circle-check"></i> Completado</span>
+              {% endif %}
+              <a href="{{ url_for('detalle_reporte', reporte_id=r.id) }}" class="mt-btn mt-btn-view"><i class="fa fa-eye"></i></a>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Empty state (oculto por defecto) -->
+  <div class="mt-empty" id="mtEmpty" style="display:none;">
+    <div class="mt-empty-icon"><i class="fa fa-filter"></i></div>
+    <h4>Sin resultados</h4>
+    <p>No hay trabajos que coincidan con los filtros aplicados.</p>
+  </div>
+
+  <!-- Paginación -->
+  <div class="mt-pagination">
+    <div class="mt-page-info">Mostrando <span id="pgFrom">1</span>–<span id="pgTo">10</span> de <span id="pgTotal">{{ total }}</span></div>
+    <div class="mt-page-btns" id="pgBtns"></div>
+  </div>
+</div>
+
+<script>
+const PER_PAGE  = 10;
+let mtRows      = Array.from(document.querySelectorAll('.mt-row'));
+let filtered    = [...mtRows];
+let currentPage = 1;
+let sortCol     = 'id';
+let sortDir     = 'asc';
+
+const PRIORIDAD_ORDER = { critica:4, alta:3, media:2, baja:1 };
+
+/* ── FILTRAR ── */
+function mtFilter() {
+  const q   = document.getElementById('mtSearch').value.toLowerCase().trim();
+  const est = document.getElementById('mtEstado').value;
+  const pri = document.getElementById('mtPrioridad').value;
+  const cat = document.getElementById('mtCategoria').value.toLowerCase();
+
+  const hasFilter = q || est || pri || cat;
+  document.getElementById('mtClearBtn').classList.toggle('visible', hasFilter);
+
+  filtered = mtRows.filter(r => {
+    const matchQ   = !q   || r.dataset.titulo.includes(q) || r.dataset.ciudad.includes(q) || r.dataset.categoria.includes(q);
+    const matchEst = !est || r.dataset.estado === est;
+    const matchPri = !pri || r.dataset.prioridad === pri;
+    const matchCat = !cat || r.dataset.categoria.includes(cat);
+    return matchQ && matchEst && matchPri && matchCat;
+  });
+
+  document.getElementById('mtCountNum').textContent = filtered.length;
+  currentPage = 1;
+  mtRender();
+}
+
+/* ── ORDENAR ── */
+function mtSort(col) {
+  if (sortCol === col) sortDir = sortDir === 'asc' ? 'desc' : 'asc';
+  else { sortCol = col; sortDir = 'asc'; }
+
+  filtered.sort((a, b) => {
+    let va, vb;
+    if (col === 'id')        { va = +a.dataset.id;  vb = +b.dataset.id; }
+    else if (col === 'prioridad') { va = PRIORIDAD_ORDER[a.dataset.prioridad]||0; vb = PRIORIDAD_ORDER[b.dataset.prioridad]||0; }
+    else if (col === 'estado')    { va = a.dataset.estado;    vb = b.dataset.estado; }
+    else if (col === 'titulo')    { va = a.dataset.titulo;    vb = b.dataset.titulo; }
+    else if (col === 'ciudad')    { va = a.dataset.ciudad;    vb = b.dataset.ciudad; }
+    else if (col === 'categoria') { va = a.dataset.categoria; vb = b.dataset.categoria; }
+    else if (col === 'fecha')     { va = a.dataset.fecha;     vb = b.dataset.fecha; }
+    else return 0;
+
+    const dir = sortDir === 'asc' ? 1 : -1;
+    return va > vb ? dir : va < vb ? -dir : 0;
+  });
+
+  currentPage = 1;
+  mtRender();
+}
+
+/* ── PAGINACIÓN ── */
+function mtRender() {
+  const total  = filtered.length;
+  const pages  = Math.max(1, Math.ceil(total / PER_PAGE));
+  const start  = (currentPage - 1) * PER_PAGE;
+  const end    = Math.min(start + PER_PAGE, total);
+  const tbody  = document.getElementById('mtTbody');
+
+  // Ocultar todas las filas
+  mtRows.forEach(r => r.style.display = 'none');
+
+  // Mostrar sólo las filtradas y de esta página
+  filtered.forEach((r, i) => {
+    r.style.display = (i >= start && i < end) ? '' : 'none';
+    // Mover al tbody para mantener orden
+    tbody.appendChild(r);
+  });
+
+  // Empty state
+  document.getElementById('mtEmpty').style.display = total === 0 ? 'block' : 'none';
+
+  // Info
+  document.getElementById('pgFrom').textContent  = total === 0 ? 0 : start + 1;
+  document.getElementById('pgTo').textContent    = end;
+  document.getElementById('pgTotal').textContent = total;
+
+  // Botones
+  const btns = document.getElementById('pgBtns');
+  btns.innerHTML = '';
+
+  const prevBtn = mkBtn('<i class="fa fa-chevron-left"></i>', currentPage === 1, () => { currentPage--; mtRender(); });
+  btns.appendChild(prevBtn);
+
+  for (let p = 1; p <= pages; p++) {
+    if (pages > 7 && Math.abs(p - currentPage) > 2 && p !== 1 && p !== pages) {
+      if (p === currentPage - 3 || p === currentPage + 3) {
+        const dots = document.createElement('button');
+        dots.className = 'mt-page-btn'; dots.textContent = '…'; dots.disabled = true;
+        btns.appendChild(dots);
+      }
+      continue;
+    }
+    const btn = mkBtn(p, false, () => { currentPage = p; mtRender(); });
+    if (p === currentPage) btn.classList.add('active');
+    btns.appendChild(btn);
+  }
+
+  const nextBtn = mkBtn('<i class="fa fa-chevron-right"></i>', currentPage === pages, () => { currentPage++; mtRender(); });
+  btns.appendChild(nextBtn);
+}
+
+function mkBtn(label, disabled, onclick) {
+  const btn = document.createElement('button');
+  btn.className = 'mt-page-btn';
+  btn.innerHTML = label;
+  btn.disabled  = disabled;
+  btn.onclick   = onclick;
+  return btn;
+}
+
+/* ── LIMPIAR FILTROS ── */
+function mtClearFilters() {
+  document.getElementById('mtSearch').value    = '';
+  document.getElementById('mtEstado').value    = '';
+  document.getElementById('mtPrioridad').value = '';
+  document.getElementById('mtCategoria').value = '';
+  document.getElementById('mtClearBtn').classList.remove('visible');
+  filtered = [...mtRows];
+  document.getElementById('mtCountNum').textContent = filtered.length;
+  currentPage = 1;
+  mtRender();
+}
+
+/* ── INIT ── */
+mtRender();
+</script>
+{% endblock %}

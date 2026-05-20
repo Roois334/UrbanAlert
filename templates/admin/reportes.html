@@ -1,0 +1,675 @@
+{% extends 'admin/base_admin.html' %}
+{% block title %}Reportes — Admin Urban Alert{% endblock %}
+{% block head %}
+<style>
+  .page-body { padding: 1.5rem 2rem; }
+  .page-header { padding: 1.5rem 2rem .75rem; display:flex; align-items:center; justify-content:space-between; gap:1rem; flex-wrap:wrap; }
+  .page-header h1 { font-size:1.4rem; font-weight:800; color:#fff; margin:0; }
+
+  .filter-bar { display:flex; gap:.6rem; align-items:center; flex-wrap:wrap; }
+  .filter-select { background:#1a1a1a; border:1px solid rgba(255,255,255,.1); color:#fff; padding:.45rem .9rem; border-radius:9px; font-size:.83rem; cursor:pointer; outline:none; }
+  .filter-select:focus { border-color:var(--naranja); }
+  .filter-btn { display:flex; align-items:center; gap:.4rem; padding:.45rem 1rem; background:var(--naranja); color:#fff; border:none; border-radius:9px; font-size:.83rem; font-weight:700; cursor:pointer; }
+  .filter-btn:hover { opacity:.88; }
+  .clear-btn { padding:.45rem .9rem; background:rgba(255,255,255,.07); color:rgba(255,255,255,.6); border:none; border-radius:9px; font-size:.83rem; cursor:pointer; text-decoration:none; }
+  .clear-btn:hover { background:rgba(255,255,255,.12); color:#fff; }
+
+  .table-ua { width:100%; border-collapse:collapse; }
+  .table-ua thead tr { border-bottom:1px solid rgba(255,255,255,.07); }
+  .table-ua th { padding:.75rem 1rem; font-size:.72rem; font-weight:700; color:rgba(255,255,255,.4); text-transform:uppercase; letter-spacing:.05em; text-align:left; white-space:nowrap; }
+  .table-ua td { padding:.8rem 1rem; font-size:.875rem; border-bottom:1px solid rgba(255,255,255,.04); vertical-align:middle; }
+  .table-ua tbody tr:hover { background:rgba(255,255,255,.025); }
+
+  /* Estado badges */
+  .badge-estado { display:inline-flex; align-items:center; padding:.25rem .75rem; border-radius:99px; font-size:.72rem; font-weight:700; white-space:nowrap; }
+  .estado-pendiente    { background:rgba(241,196,15,.15); color:#f1c40f; }
+  .estado-aprobado     { background:rgba(52,152,219,.15); color:#3498db; }
+  .estado-asignado     { background:rgba(155,89,182,.15); color:#9b59b6; }
+  .estado-en_progreso  { background:rgba(255,107,0,.15); color:var(--naranja); }
+  .estado-resuelto     { background:rgba(46,204,113,.15); color:#2ecc71; }
+  .estado-rechazado    { background:rgba(231,76,60,.15); color:#e74c3c; }
+  .estado-en_revision  { background:rgba(52,152,219,.1); color:#5dade2; }
+
+  /* Gravedad bar */
+  .gravedad-bar { width:60px; height:5px; background:rgba(255,255,255,.08); border-radius:99px; overflow:hidden; display:inline-block; vertical-align:middle; margin-right:.4rem; }
+  .gravedad-fill { height:100%; border-radius:99px; background:var(--naranja); }
+
+  /* Acciones */
+  .action-btn { display:inline-flex; align-items:center; justify-content:center; width:30px; height:30px; border-radius:8px; border:none; cursor:pointer; font-size:.8rem; transition:all .15s; text-decoration:none; }
+  .btn-view { background:rgba(255,255,255,.07); color:rgba(255,255,255,.5); }
+  .btn-view:hover { background:rgba(52,152,219,.2); color:#3498db; }
+
+  /* Modal */
+  .modal-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,.75); backdrop-filter:blur(5px); z-index:1000; align-items:center; justify-content:center; }
+  .modal-overlay.open { display:flex; }
+  .modal-box { background:#1c1c1c; border:1px solid rgba(255,255,255,.1); border-radius:20px; padding:2rem; width:520px; max-width:95vw; max-height:90vh; overflow-y:auto; animation:fadeUp .22s ease; }
+  .modal-title { font-size:1.1rem; font-weight:800; color:#fff; margin-bottom:1.25rem; display:flex; justify-content:space-between; align-items:center; }
+  .modal-close { background:none; border:none; color:rgba(255,255,255,.35); font-size:1.2rem; cursor:pointer; padding:.25rem; transition:color .15s; }
+  .modal-close:hover { color:#fff; }
+  .modal-label { font-size:.75rem; font-weight:700; color:rgba(255,255,255,.4); text-transform:uppercase; letter-spacing:.06em; margin-bottom:.4rem; }
+
+  /* ── Stepper ── */
+  .stepper { display:flex; align-items:flex-start; gap:0; margin:1.5rem 0 1.75rem; position:relative; }
+  .step { display:flex; flex-direction:column; align-items:center; flex:1; position:relative; cursor:pointer; }
+  .step-line { position:absolute; top:18px; left:50%; width:100%; height:2px; background:rgba(255,255,255,.1); z-index:0; transition:background .3s; }
+  .step:last-child .step-line { display:none; }
+  .step-line.done { background:var(--naranja); }
+  .step-circle { width:36px; height:36px; border-radius:50%; border:2px solid rgba(255,255,255,.15); background:rgba(255,255,255,.05); display:flex; align-items:center; justify-content:center; font-size:.8rem; color:rgba(255,255,255,.3); position:relative; z-index:1; transition:all .25s ease; font-weight:700; }
+  .step.done .step-circle { background:var(--naranja); border-color:var(--naranja); color:#fff; box-shadow:0 0 0 4px rgba(255,107,0,.2); }
+  .step.current .step-circle { background:transparent; border-color:var(--naranja); color:var(--naranja); box-shadow:0 0 0 4px rgba(255,107,0,.15); }
+  .step.selectable:hover .step-circle { border-color:rgba(255,107,0,.6); background:rgba(255,107,0,.08); color:rgba(255,107,0,.8); }
+  .step.locked { cursor:not-allowed; opacity:.35; pointer-events:none; }
+  .step.tecnico-only { cursor:default; opacity:.45; pointer-events:none; }
+  .step.tecnico-only .step-circle { border-color:rgba(52,152,219,.4); color:rgba(52,152,219,.5); background:rgba(52,152,219,.06); }
+  .step.tecnico-only .step-label  { color:rgba(52,152,219,.5); }
+  .tec-badge {
+    position:absolute; top:-20px; left:50%; transform:translateX(-50%);
+    font-size:.56rem; font-weight:700; color:rgba(52,152,219,.7);
+    background:rgba(52,152,219,.1); border:1px solid rgba(52,152,219,.2);
+    padding:.1rem .5rem; border-radius:99px; white-space:nowrap;
+    pointer-events:none;
+  }
+  .tec-badge i { margin-right:.2rem; font-size:.5rem; }
+  .step.selected .step-circle { background:var(--naranja); border-color:var(--naranja); color:#fff; box-shadow:0 0 0 5px rgba(255,107,0,.25); transform:scale(1.12); }
+  .step-label { font-size:.6rem; font-weight:600; color:rgba(255,255,255,.3); margin-top:.45rem; text-align:center; text-transform:uppercase; letter-spacing:.04em; line-height:1.2; transition:color .2s; max-width:60px; }
+  .step.done .step-label, .step.current .step-label, .step.selected .step-label { color:rgba(255,255,255,.7); }
+
+  /* ── Reject ── */
+  .btn-rechazar { width:100%; padding:.65rem; background:transparent; border:1.5px solid rgba(220,53,69,.45); color:#ff6b6b; border-radius:10px; font-size:.85rem; font-weight:600; cursor:pointer; margin-top:.6rem; transition:all .2s; display:flex; align-items:center; justify-content:center; gap:.45rem; }
+  .btn-rechazar:hover { background:rgba(220,53,69,.1); border-color:rgba(220,53,69,.8); }
+  .btn-rechazar:disabled { opacity:.3; cursor:not-allowed; }
+
+  /* ── Técnico ── */
+  .tecnico-section { background:rgba(255,107,0,.06); border:1.5px solid rgba(255,107,0,.25); border-radius:12px; padding:1rem 1.1rem; margin-bottom:1rem; display:none; }
+  .tecnico-section.visible { display:block; }
+  .tecnico-section .modal-label { color:var(--naranja); margin-bottom:.5rem; }
+  .modal-select { width:100%; background:#252525; border:1px solid rgba(255,255,255,.12); color:#fff; padding:.6rem .9rem; border-radius:9px; font-size:.875rem; outline:none; margin-bottom:0; }
+  .modal-select:focus { border-color:var(--naranja); }
+
+  /* ── Submit ── */
+  .modal-submit { width:100%; padding:.75rem; background:var(--naranja); color:#fff; border:none; border-radius:10px; font-size:.9rem; font-weight:700; cursor:pointer; transition:opacity .2s; display:flex; align-items:center; justify-content:center; gap:.5rem; }
+  .modal-submit:hover { opacity:.88; }
+  .modal-submit:disabled { opacity:.35; cursor:not-allowed; }
+
+  /* ── Info pill ── */
+  .modal-info-pill { font-size:.75rem; color:rgba(255,255,255,.35); background:rgba(255,255,255,.04); border:1px solid rgba(255,255,255,.07); border-radius:8px; padding:.5rem .85rem; margin-bottom:1.25rem; display:flex; align-items:center; gap:.5rem; }
+  .modal-info-pill i { color:var(--naranja); }
+  .modal-warn { font-size:.75rem; color:#ffb347; background:rgba(255,179,71,.07); border:1px solid rgba(255,179,71,.25); border-radius:8px; padding:.5rem .85rem; margin-bottom:.85rem; display:none; align-items:center; gap:.5rem; }
+  .modal-warn.visible { display:flex; }
+
+  .stats-pills { display:flex; gap:.6rem; flex-wrap:wrap; margin-bottom:1rem; }
+  .stat-pill { background:rgba(255,255,255,.05); border:1px solid rgba(255,255,255,.08); border-radius:99px; padding:.3rem .9rem; font-size:.78rem; color:rgba(255,255,255,.6); }
+  .stat-pill strong { color:#fff; }
+</style>
+{% endblock %}
+{% block content %}
+<div class="page-header">
+  <h1><i class="fa fa-flag" style="color:var(--naranja);margin-right:.5rem;"></i> Gestión de Reportes</h1>
+  <form method="GET" class="filter-bar">
+    <select name="ciudad" class="filter-select">
+      <option value="">Todas las ciudades</option>
+      {% for c in ['Facatativá','Madrid','Mosquera'] %}
+      <option {% if ciudad==c %}selected{% endif %} value="{{ c }}">{{ c }}</option>
+      {% endfor %}
+    </select>
+    <select name="estado" class="filter-select">
+      <option value="">Todos los estados</option>
+      {% for e in ['pendiente','aprobado','asignado','en_progreso','resuelto','rechazado'] %}
+      <option {% if estado==e %}selected{% endif %} value="{{ e }}">{{ e.replace('_',' ').title() }}</option>
+      {% endfor %}
+    </select>
+    <button type="submit" class="filter-btn"><i class="fa fa-filter"></i> Filtrar</button>
+    {% if ciudad or estado %}
+    <a href="{{ url_for('admin_reportes') }}" class="clear-btn"><i class="fa fa-xmark"></i> Limpiar</a>
+    {% endif %}
+  </form>
+</div>
+
+<div class="page-body">
+  <div class="card-ua">
+    <div style="overflow-x:auto;">
+      <table class="table-ua">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Título</th>
+            <th>Ciudad</th>
+            <th>Categoría</th>
+            <th>IA</th>
+            <th>Estado</th>
+            <th>Técnico</th>
+            <th>Fecha</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for r in reportes %}
+          <tr>
+            <td style="color:var(--gris-3);font-size:.8rem;">#{{ r.id }}</td>
+            <td>
+              <div style="font-weight:600;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#fff;">{{ r.titulo }}</div>
+              {% if r.usuario_nombre %}
+              <div style="font-size:.75rem;color:rgba(255,255,255,.4);margin-top:.15rem;">
+                <i class="fa fa-user" style="font-size:.65rem;"></i> {{ r.usuario_nombre }} {{ r.usuario_apellido or '' }}
+              </div>
+              {% endif %}
+            </td>
+            <td style="color:rgba(255,255,255,.7);">{{ r.ciudad }}</td>
+            <td><span style="font-size:.8rem;color:rgba(255,255,255,.5);">{{ r.categoria_nombre or '—' }}</span></td>
+            <td>
+              {% if r.gravedad_ia %}
+              <div style="display:flex;align-items:center;gap:.4rem;">
+                <div class="gravedad-bar"><div class="gravedad-fill" style="width:{{ r.gravedad_ia|round(0)|int }}%;"></div></div>
+                <span style="font-size:.75rem;color:var(--gris-3);">{{ r.gravedad_ia|round(0)|int }}%</span>
+              </div>
+              {% else %}<span style="color:var(--gris-3);">—</span>{% endif %}
+            </td>
+            <td>
+              <span class="badge-estado estado-{{ r.estado }}">{{ r.estado.replace('_',' ').title() }}</span>
+            </td>
+            <td style="font-size:.8rem;color:rgba(255,255,255,.5);">
+              {% if r.tecnico_nombre %}
+              <i class="fa fa-wrench" style="color:var(--naranja);font-size:.7rem;margin-right:.3rem;"></i>{{ r.tecnico_nombre }} {{ r.tecnico_apellido or '' }}
+              {% else %}<span style="color:rgba(255,255,255,.2);">Sin asignar</span>{% endif %}
+            </td>
+            <td style="font-size:.78rem;color:var(--gris-3);white-space:nowrap;">
+              {{ r.creado_en.strftime('%d/%m/%Y') if r.creado_en else '—' }}
+            </td>
+            <td>
+              <div style="display:flex;gap:.4rem;align-items:center;">
+                <a href="{{ url_for('detalle_reporte', reporte_id=r.id) }}" class="action-btn btn-view" title="Ver detalle">
+                  <i class="fa fa-eye"></i>
+                </a>
+                <button class="action-btn btn-view" style="background:rgba(255,107,0,.1);color:var(--naranja);"
+                        onclick="abrirModal({{ r.id }}, '{{ r.titulo|replace("'","\\'")|truncate(40,True,"...") }}', '{{ r.estado }}', {{ r.tecnico_id or 'null' }})"
+                        title="Gestionar">
+                  <i class="fa fa-pen"></i>
+                </button>
+              </div>
+            </td>
+          </tr>
+          {% else %}
+          <tr><td colspan="9" style="text-align:center;padding:3rem;color:var(--gris-3);">
+            <i class="fa fa-flag" style="font-size:2rem;display:block;margin-bottom:.75rem;opacity:.3;"></i>
+            No hay reportes con estos filtros.
+          </td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- Modal gestión reporte -->
+<div class="modal-overlay" id="reporteModal" onclick="if(event.target===this)cerrarModal()">
+  <div class="modal-box">
+    <div class="modal-title">
+      <span><i class="fa fa-pen" style="color:var(--naranja);margin-right:.5rem;"></i> Gestionar Reporte</span>
+      <button class="modal-close" onclick="cerrarModal()"><i class="fa fa-xmark"></i></button>
+    </div>
+
+    <!-- Título del reporte -->
+    <div class="modal-info-pill">
+      <i class="fa fa-hashtag"></i>
+      <span id="modalReporteTitulo">—</span>
+    </div>
+
+    <form id="modalForm" onsubmit="submitModalForm(event)">
+      <input type="hidden" name="estado" id="modalEstadoInput" value="">
+      <input type="hidden" name="tecnico_id" id="modalTecnicoInput" value="">
+      <input type="hidden" name="dia_asignado" id="modalDiaInput" value="">
+
+      <!-- Stepper de estados -->
+      <div style="font-size:.7rem;font-weight:700;color:rgba(255,255,255,.35);text-transform:uppercase;letter-spacing:.07em;margin-bottom:.75rem;">
+        <i class="fa fa-arrow-right" style="color:var(--naranja);margin-right:.4rem;"></i> Selecciona el siguiente estado
+      </div>
+
+      <div class="stepper" id="stepper">
+        <!-- Generado por JS -->
+      </div>
+
+      <!-- Aviso cuando necesita técnico -->
+      <div class="modal-warn" id="modalWarnTecnico">
+        <i class="fa fa-triangle-exclamation"></i>
+        Para pasar a <strong style="color:#ffb347;margin:0 .25rem;">Asignado</strong> o superior debes seleccionar un técnico.
+      </div>
+
+      <!-- Sección técnico (aparece cuando el estado lo requiere) -->
+      <div class="tecnico-section" id="tecnicoSection">
+        <!-- Modo SELECCIÓN: primer vez asignando técnico -->
+        <div id="tecnicoModoSelect">
+          <div class="modal-label"><i class="fa fa-user-gear" style="margin-right:.4rem;"></i>Asignar Técnico <span style="color:#ff6b00;">*</span></div>
+          <select class="modal-select" id="modalTecnicoSelect" onchange="onTecnicoChange(this.value)">
+            <option value="">— Selecciona un técnico —</option>
+            {% for t in tecnicos %}
+            {% set avail = t.tec_disponible %}
+            {% set activos = t.trabajos_activos or 0 %}
+            {% set bloqueado = activos >= 2 %}
+            <option value="{{ t.id }}"
+              data-disp="{{ 1 if avail else 0 }}"
+              data-horario="{{ t.horario_raw or '' }}"
+              data-activos="{{ activos }}"
+              {% if bloqueado %}disabled{% endif %}>
+              {% if bloqueado %}🔒{% elif avail %}✅{% else %}⛔{% endif %} {{ t.nombre }} {{ t.apellido or '' }}{% if t.especialidad %} · {{ t.especialidad }}{% endif %}{% if bloqueado %} ({{ activos }}/2 trabajos — lleno){% elif activos > 0 %} ({{ activos }}/2 trabajos){% endif %}
+            </option>
+            {% endfor %}
+          </select>
+          <div id="tecnicoHorarioInfo" style="display:none;margin-top:.7rem;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:10px;padding:.7rem .9rem;font-size:.75rem;color:rgba(255,255,255,.55);">
+            <div id="tecnicoHorarioContent"></div>
+          </div>
+        </div>
+        <!-- Modo BLOQUEADO: técnico ya asignado, no se puede cambiar -->
+        <div id="tecnicoModoLocked" style="display:none;">
+          <div class="modal-label" style="color:rgba(255,255,255,.35);"><i class="fa fa-lock" style="margin-right:.4rem;"></i>Técnico Asignado</div>
+          <div style="display:flex;align-items:center;gap:.65rem;padding:.6rem .9rem;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:9px;">
+            <div style="width:30px;height:30px;border-radius:50%;background:var(--naranja);display:flex;align-items:center;justify-content:center;font-size:.75rem;flex-shrink:0;"><i class="fa fa-user"></i></div>
+            <span id="tecnicoLockedNombre" style="font-size:.88rem;color:#fff;font-weight:600;">—</span>
+            <span style="margin-left:auto;font-size:.7rem;color:rgba(255,255,255,.3);background:rgba(255,255,255,.06);padding:.2rem .6rem;border-radius:20px;"><i class="fa fa-lock" style="font-size:.6rem;margin-right:.3rem;"></i>Fijo</span>
+          </div>
+          <p style="font-size:.7rem;color:rgba(255,255,255,.3);margin-top:.45rem;"><i class="fa fa-circle-info" style="color:var(--naranja);margin-right:.3rem;"></i>El técnico no puede cambiarse una vez asignado.</p>
+        </div>
+      </div>
+
+      <div id="adminLimitInfo" style="display:none;background:rgba(52,152,219,.08);border:1px solid rgba(52,152,219,.2);border-radius:10px;padding:.75rem 1rem;font-size:.8rem;color:rgba(52,152,219,.9);margin-bottom:.5rem;">
+        <i class="fa fa-circle-info" style="margin-right:.5rem;"></i>
+        Este reporte ya fue asignado al técnico. Los siguientes pasos (<strong>En Progreso</strong> y <strong>Resuelto</strong>) son gestionados por el técnico directamente.
+      </div>
+      <button type="submit" class="modal-submit" id="modalSubmit" disabled>
+        <i class="fa fa-check"></i> Guardar cambios
+      </button>
+
+      <!-- Botón rechazar siempre disponible (excepto si ya está rechazado/resuelto) -->
+      <button type="button" class="btn-rechazar" id="btnRechazar" onclick="rechazarReporte()">
+        <i class="fa fa-xmark-circle"></i> Rechazar reporte
+      </button>
+    </form>
+  </div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+// ── Orden lineal de estados (sin rechazado — es acción lateral) ──
+const ESTADOS = ['pendiente','aprobado','asignado','en_progreso','resuelto'];
+const LABELS  = ['Pendiente','Aprobado','Asignado','En Progreso','Resuelto'];
+const ICONS   = ['fa-clock','fa-thumbs-up','fa-user-gear','fa-screwdriver-wrench','fa-circle-check'];
+
+// El admin solo puede mover hasta ASIGNADO; en_progreso y resuelto son del técnico
+const ADMIN_MAX_IDX = 2; // índice de 'asignado'
+
+// Estados que REQUIEREN técnico asignado
+const REQUIRE_TECNICO = ['asignado'];
+
+let _currentEstado = '';
+let _selectedEstado = '';
+let _tecnicoId = '';
+let _reporteId = null;
+let _diaSeleccionado = null;
+
+function seleccionarDia(dia, btn) {
+  const dias = ['Lunes','Martes','Miércoles','Jueves','Viernes','Sábado','Domingo'];
+  const msg = document.getElementById('diaSeleccionadoMsg');
+
+  // Si ya está seleccionado, deseleccionar (toggle)
+  if (_diaSeleccionado === dia) {
+    _diaSeleccionado = null;
+    document.getElementById('modalDiaInput').value = '';
+    // Restaurar estilo original del botón (disponible)
+    btn.style.boxShadow = '';
+    btn.style.transform = '';
+    btn.style.background = 'rgba(46,204,113,.1)';
+    btn.style.borderColor = 'rgba(46,204,113,.25)';
+    btn.style.color = '#2ecc71';
+    if (msg) msg.innerHTML = '';
+    updateSubmitBtn();
+    return;
+  }
+
+  // Nuevo día seleccionado — resetear TODOS los botones a su color original
+  document.querySelectorAll('#diasBotonesWrap button').forEach(b => {
+    b.style.boxShadow = '';
+    b.style.transform = '';
+    // Restaurar color verde (disponible); los llenos ya están disabled y no llegan aquí
+    b.style.background = 'rgba(46,204,113,.1)';
+    b.style.borderColor = 'rgba(46,204,113,.25)';
+    b.style.color = '#2ecc71';
+  });
+
+  // Aplicar estilo seleccionado al botón clickeado
+  _diaSeleccionado = dia;
+  document.getElementById('modalDiaInput').value = dia;
+  btn.style.boxShadow = '0 0 0 3px rgba(255,107,0,.4)';
+  btn.style.transform = 'scale(1.08)';
+  btn.style.background = 'rgba(255,107,0,.18)';
+  btn.style.borderColor = 'rgba(255,107,0,.6)';
+  btn.style.color = '#FF6B00';
+
+  // Mensaje confirmación
+  if (msg) msg.innerHTML = `<i class="fa fa-calendar-check" style="color:var(--naranja);margin-right:.3rem"></i>Día seleccionado: <strong style="color:#fff">${dias[dia]}</strong>`;
+  updateSubmitBtn();
+}
+
+function renderStepper() {
+  const stepper = document.getElementById('stepper');
+  const currentIdx = ESTADOS.indexOf(_currentEstado);
+  stepper.innerHTML = '';
+
+  ESTADOS.forEach((e, i) => {
+    const isDone        = i < currentIdx;
+    const isCurrent     = i === currentIdx;
+    // Solo seleccionable si es el siguiente paso y no supera el límite del admin
+    const isSelectable  = (i === currentIdx + 1) && (i <= ADMIN_MAX_IDX);
+    // Pasos exclusivos del técnico (en_progreso, resuelto)
+    const isTecnicoStep = i > ADMIN_MAX_IDX;
+    const isLocked      = !isSelectable && !isDone && !isCurrent;
+    const isSelected    = e === _selectedEstado;
+
+    let classes = 'step';
+    if (isDone)          classes += ' done';
+    if (isCurrent)       classes += ' current';
+    if (isSelectable)    classes += ' selectable';
+    if (isLocked)        classes += ' locked';
+    if (isSelected)      classes += ' selected';
+    if (isTecnicoStep)   classes += ' tecnico-only';
+
+    const onclick = isSelectable ? `onclick="selectEstado('${e}')"` : '';
+
+    const tecBadge = isTecnicoStep
+      ? `<div class="tec-badge"><i class='fa fa-wrench'></i> Técnico</div>`
+      : '';
+
+    stepper.innerHTML += `
+      <div class="${classes}" ${onclick} style="position:relative;">
+        ${tecBadge}
+        <div class="step-line ${isDone ? 'done' : ''}"></div>
+        <div class="step-circle">
+          ${isDone ? '<i class="fa fa-check"></i>' : `<i class="fa ${ICONS[i]}"></i>`}
+        </div>
+        <div class="step-label">${LABELS[i]}</div>
+      </div>`;
+  });
+}
+
+function selectEstado(estado) {
+  _selectedEstado = estado;
+  document.getElementById('modalEstadoInput').value = estado;
+  renderStepper();
+  checkTecnicoRequired();
+  updateSubmitBtn();
+}
+
+function checkTecnicoRequired() {
+  const needsTecnico = REQUIRE_TECNICO.includes(_selectedEstado);
+  const section      = document.getElementById('tecnicoSection');
+  const warn         = document.getElementById('modalWarnTecnico');
+
+  if (!needsTecnico) {
+    section.classList.remove('visible');
+    warn.classList.remove('visible');
+    return;
+  }
+
+  section.classList.add('visible');
+  // Siempre mostrar el selector — el técnico puede cambiarse hasta guardar
+  document.getElementById('tecnicoModoSelect').style.display = 'block';
+  document.getElementById('tecnicoModoLocked').style.display = 'none';
+  const noTecnico = !document.getElementById('modalTecnicoSelect').value;
+  warn.classList.toggle('visible', noTecnico);
+}
+
+function onTecnicoChange(val) {
+  _tecnicoId = val;
+  document.getElementById('modalTecnicoInput').value = val;
+
+  // Auto-seleccionar 'asignado' cuando se elige un técnico y el estado actual lo permite
+  if (val && !_selectedEstado) {
+    const currentIdx  = ESTADOS.indexOf(_currentEstado);
+    const asignadoIdx = ESTADOS.indexOf('asignado');
+    if (currentIdx + 1 === asignadoIdx && asignadoIdx <= ADMIN_MAX_IDX) {
+      _selectedEstado = 'asignado';
+      document.getElementById('modalEstadoInput').value = 'asignado';
+      renderStepper();
+    }
+  }
+
+  checkTecnicoRequired();
+  updateSubmitBtn();
+
+  const horInfoBox = document.getElementById('tecnicoHorarioInfo');
+  const horContent = document.getElementById('tecnicoHorarioContent');
+  if (!val) { horInfoBox.style.display = 'none'; return; }
+
+  const opt = document.querySelector(`#modalTecnicoSelect option[value="${val}"]`);
+  if (!opt) { horInfoBox.style.display = 'none'; return; }
+
+  const dispFlag    = opt.dataset.disp === '1';
+  const horarioRaw  = opt.dataset.horario || '';
+  const trabajosAct = parseInt(opt.dataset.activos || '0', 10);
+  const diasNombres = ['Lun','Mar','Mié','Jue','Vie','Sáb','Dom'];
+  const MAX_TRABAJOS = 2;
+
+  // Limpiar día seleccionado anterior
+  document.getElementById('modalDiaInput').value = '';
+  _diaSeleccionado = null;
+  updateSubmitBtn();
+
+  // Indicador de disponibilidad general
+  let html = `<div style="margin-bottom:.5rem;font-weight:700;color:${dispFlag?'#2ecc71':'#e74c3c'};">
+    <i class="fa fa-circle" style="font-size:.55rem;vertical-align:middle;margin-right:.4rem"></i>
+    ${dispFlag ? 'Técnico disponible ahora' : 'Técnico marcado como no disponible'}
+  </div>`;
+
+  if (horarioRaw) {
+    // horarioRaw = "dia:disp:trabajos_ese_dia|..." (días disponibles)
+    html += '<div style="font-size:.72rem;color:rgba(255,255,255,.45);margin-bottom:.45rem;font-weight:600;">Selecciona el día de trabajo:</div>';
+    html += '<div style="display:flex;flex-wrap:wrap;gap:.4rem;margin-top:.2rem;" id="diasBotonesWrap">';
+    horarioRaw.split('|').forEach(entry => {
+      const parts = entry.split(':');
+      const dia       = parseInt(parts[0], 10);
+      const trabajosDia = parseInt(parts[2] || '0', 10);
+      const lleno     = trabajosDia >= MAX_TRABAJOS;
+      const colorBg   = lleno ? 'rgba(231,76,60,.1)'   : 'rgba(46,204,113,.1)';
+      const colorBd   = lleno ? 'rgba(231,76,60,.3)'   : 'rgba(46,204,113,.25)';
+      const colorTx   = lleno ? 'rgba(231,76,60,.5)'   : '#2ecc71';
+      const cursor    = lleno ? 'not-allowed'           : 'pointer';
+      const badge     = lleno
+        ? `<span style="margin-left:.3rem;font-size:.6rem;background:rgba(231,76,60,.2);color:#e74c3c;padding:.1rem .3rem;border-radius:4px;">LLENO</span>`
+        : (trabajosDia > 0
+          ? `<span style="margin-left:.3rem;font-size:.6rem;background:rgba(255,193,7,.15);color:#ffc107;padding:.1rem .3rem;border-radius:4px;">${trabajosDia}/2</span>`
+          : '');
+      html += `<button type="button"
+        data-dia="${dia}"
+        ${lleno ? 'disabled' : ''}
+        onclick="${lleno ? '' : 'seleccionarDia(' + dia + ', this)'}"
+        style="padding:.3rem .75rem;border-radius:8px;font-size:.75rem;font-weight:700;
+          background:${colorBg};border:1.5px solid ${colorBd};color:${colorTx};
+          cursor:${cursor};transition:all .18s;display:flex;align-items:center;gap:.2rem;">
+        ${diasNombres[dia]}${badge}
+      </button>`;
+    });
+    html += '</div>';
+    html += '<div id="diaSeleccionadoMsg" style="margin-top:.5rem;font-size:.72rem;color:rgba(255,255,255,.35);"></div>';
+  } else {
+    html += '<div style="opacity:.5;margin-top:.3rem;"><i class="fa fa-calendar-xmark" style="margin-right:.4rem"></i>Sin días configurados</div>';
+  }
+
+  horContent.innerHTML = html;
+  horInfoBox.style.display = 'block';
+}
+
+function updateSubmitBtn() {
+  const btn = document.getElementById('modalSubmit');
+  if (!_selectedEstado) { btn.disabled = true; return; }
+  // Nunca habilitar si el estado supera el limite del admin
+  const selIdx = ESTADOS.indexOf(_selectedEstado);
+  if (selIdx > ADMIN_MAX_IDX) { btn.disabled = true; return; }
+  const needsTecnico = REQUIRE_TECNICO.includes(_selectedEstado);
+  const hasTecnico   = !!document.getElementById('modalTecnicoSelect').value;
+  if (needsTecnico && !hasTecnico) { btn.disabled = true; return; }
+  // Si hay técnico seleccionado, también debe escoger un día disponible
+  const horInfoVisible = document.getElementById('tecnicoHorarioInfo')?.style.display !== 'none';
+  if (hasTecnico && horInfoVisible && _diaSeleccionado === null) {
+    btn.disabled = true;
+    return;
+  }
+  btn.disabled = false;
+}
+
+// ── Mostrar toast inline dentro del modal ──────────────────
+function showModalToast(msg, ok) {
+  let toast = document.getElementById('modalToast');
+  if (!toast) {
+    toast = document.createElement('div');
+    toast.id = 'modalToast';
+    toast.style.cssText = 'margin-bottom:.75rem;padding:.65rem .9rem;border-radius:10px;font-size:.8rem;font-weight:600;display:flex;align-items:center;gap:.5rem;transition:opacity .3s;';
+    document.getElementById('modalForm').prepend(toast);
+  }
+  toast.style.opacity = '1';
+  if (ok) {
+    toast.style.background = 'rgba(46,204,113,.1)';
+    toast.style.border = '1px solid rgba(46,204,113,.3)';
+    toast.style.color = '#2ecc71';
+    toast.innerHTML = '<i class="fa fa-check-circle"></i> ' + msg;
+  } else {
+    toast.style.background = 'rgba(231,76,60,.1)';
+    toast.style.border = '1px solid rgba(231,76,60,.3)';
+    toast.style.color = '#e74c3c';
+    toast.innerHTML = '<i class="fa fa-xmark-circle"></i> ' + msg;
+  }
+  setTimeout(() => { toast.style.opacity = '0'; }, 3000);
+}
+
+// ── Submit vía fetch — sin recargar la página ──────────────
+function submitModalForm(e) {
+  e.preventDefault();
+  e.stopPropagation();
+  const estado    = document.getElementById('modalEstadoInput').value;
+  const tecnicoId = document.getElementById('modalTecnicoInput').value;
+  const btn       = document.getElementById('modalSubmit');
+
+  // Validacion extra: nunca enviar estados de tecnico desde admin
+  const selIdx = ESTADOS.indexOf(estado);
+  if (!estado || selIdx > ADMIN_MAX_IDX) {
+    showModalToast('Estado no permitido para administrador.', false);
+    return;
+  }
+
+  btn.disabled = true;
+  btn.innerHTML = '<i class="fa fa-spinner fa-spin"></i> Guardando…';
+
+  fetch('/admin/reportes/' + _reporteId + '/estado', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ estado, tecnico_id: tecnicoId || null, dia_asignado: _diaSeleccionado })
+  })
+  .then(r => r.json())
+  .then(data => {
+    if (data.ok) {
+      showModalToast('Estado actualizado correctamente.', true);
+      // Actualizar el estado actual en el modal sin cerrar
+      _currentEstado  = data.estado;
+      _selectedEstado = '';
+      document.getElementById('modalEstadoInput').value = '';
+
+      // Si se asignó técnico, bloquear visualmente el selector ahora
+      if (tecnicoId && data.estado === 'asignado') {
+        const sel = document.getElementById('modalTecnicoSelect');
+        const opt = sel.querySelector(`option[value="${tecnicoId}"]`);
+        document.getElementById('tecnicoModoSelect').style.display = 'none';
+        document.getElementById('tecnicoModoLocked').style.display = 'block';
+        document.getElementById('tecnicoLockedNombre').textContent = opt ? opt.textContent.trim() : '—';
+      }
+
+      // Actualizar badge estado en la fila de la tabla sin recargar
+      const filaEstado = document.querySelector(`tr[data-reporte-id="${_reporteId}"] .estado-badge`);
+      if (filaEstado) filaEstado.textContent = data.estado.replace('_',' ').replace(/\b\w/g,c=>c.toUpperCase());
+
+      // Re-renderizar stepper con el nuevo estado
+      const adminDone = ESTADOS.indexOf(_currentEstado) >= ADMIN_MAX_IDX;
+      document.getElementById('modalSubmit').style.display = adminDone ? 'none' : '';
+      if (document.getElementById('adminLimitInfo'))
+        document.getElementById('adminLimitInfo').style.display = adminDone ? 'block' : 'none';
+      renderStepper();
+      checkTecnicoRequired();
+    } else {
+      showModalToast(data.error || 'Error al guardar.', false);
+    }
+  })
+  .catch(() => showModalToast('Error de conexión.', false))
+  .finally(() => {
+    btn.disabled = false;
+    btn.innerHTML = '<i class="fa fa-check"></i> Guardar cambios';
+    updateSubmitBtn();
+  });
+}
+
+function abrirModal(id, titulo, estado, tecnicoId) {
+  _reporteId     = id;
+  _currentEstado = estado;
+  _selectedEstado = '';
+  _tecnicoId     = tecnicoId ? tecnicoId.toString() : '';
+  _diaSeleccionado = null;
+  document.getElementById('modalDiaInput').value = '';
+
+  // Limpiar toast anterior
+  const oldToast = document.getElementById('modalToast');
+  if (oldToast) oldToast.remove();
+
+  document.getElementById('modalReporteTitulo').textContent = '#' + id + ' · ' + titulo;
+
+  const tecSel = document.getElementById('modalTecnicoSelect');
+  tecSel.value = _tecnicoId;
+  document.getElementById('modalTecnicoInput').value = _tecnicoId;
+
+  // Restaurar selector si había técnico previo
+  document.getElementById('tecnicoModoSelect').style.display = 'block';
+  document.getElementById('tecnicoModoLocked').style.display = 'none';
+
+  const btnR = document.getElementById('btnRechazar');
+  btnR.disabled = (estado === 'rechazado' || estado === 'resuelto');
+
+  const currentIdx = ESTADOS.indexOf(estado);
+  const adminDone  = currentIdx >= ADMIN_MAX_IDX;
+  const submitBtn  = document.getElementById('modalSubmit');
+  const adminInfo  = document.getElementById('adminLimitInfo');
+  submitBtn.style.display = adminDone ? 'none' : '';
+  submitBtn.disabled = true;
+  submitBtn.innerHTML = '<i class="fa fa-check"></i> Guardar cambios';
+  if (adminInfo) adminInfo.style.display = adminDone ? 'block' : 'none';
+
+  renderStepper();
+  document.getElementById('reporteModal').classList.add('open');
+}
+
+function rechazarReporte() {
+  if (!confirm('¿Seguro que deseas rechazar este reporte?')) return;
+  const btn = document.getElementById('btnRechazar');
+  btn.disabled = true;
+
+  fetch('/admin/reportes/' + _reporteId + '/estado', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ estado: 'rechazado', tecnico_id: _tecnicoId || null })
+  })
+  .then(r => r.json())
+  .then(data => {
+    if (data.ok) {
+      showModalToast('Reporte rechazado.', true);
+      _currentEstado = 'rechazado';
+      _selectedEstado = '';
+      document.getElementById('modalSubmit').style.display = 'none';
+      document.getElementById('btnRechazar').disabled = true;
+      renderStepper();
+    } else {
+      showModalToast(data.error || 'Error al rechazar.', false);
+      btn.disabled = false;
+    }
+  })
+  .catch(() => { showModalToast('Error de conexión.', false); btn.disabled = false; });
+}
+
+function cerrarModal() {
+  document.getElementById('reporteModal').classList.remove('open');
+}
+document.addEventListener('keydown', e => { if(e.key === 'Escape') cerrarModal(); });
+</script>
+{% endblock %}

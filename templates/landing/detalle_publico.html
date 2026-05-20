@@ -1,0 +1,242 @@
+{% extends 'landing/base.html' %}
+{% block title %}{{ reporte.titulo }} — Urban Alert{% endblock %}
+
+{% block head %}
+<style>
+  .det-page { max-width: 860px; margin: 0 auto; padding: 2.5rem 1.5rem 4rem; }
+
+  .det-back {
+    display: inline-flex; align-items: center; gap: .45rem;
+    color: rgba(255,255,255,.4); font-size: .85rem; font-weight: 500;
+    text-decoration: none; margin-bottom: 1.75rem;
+    transition: color .18s;
+  }
+  .det-back:hover { color: #ff6b00; }
+
+  .det-card {
+    background: #141414;
+    border: 1px solid rgba(255,255,255,.08);
+    border-radius: 20px; overflow: hidden;
+  }
+
+  .det-img {
+    width: 100%; height: 320px; object-fit: cover;
+    display: block;
+  }
+  .det-img-placeholder {
+    width: 100%; height: 220px;
+    background: rgba(255,107,0,.07);
+    display: flex; align-items: center; justify-content: center;
+    border-bottom: 1px solid rgba(255,255,255,.06);
+  }
+
+  .det-body { padding: 2rem 2.5rem 2.5rem; }
+
+  .det-meta-top {
+    display: flex; align-items: center; gap: .6rem;
+    flex-wrap: wrap; margin-bottom: 1.1rem;
+  }
+
+  /* Estado badges */
+  .det-badge {
+    display: inline-flex; align-items: center; gap: .35rem;
+    padding: .3rem .85rem; border-radius: 99px;
+    font-size: .73rem; font-weight: 700; letter-spacing: .04em;
+    text-transform: uppercase; font-family: 'Plus Jakarta Sans', sans-serif;
+  }
+  .det-badge.pendiente   { background: rgba(243,156,18,.12); border:1px solid rgba(243,156,18,.35); color: #f39c12; }
+  .det-badge.aprobado    { background: rgba(255,107,0,.12);  border:1px solid rgba(255,107,0,.3);  color: #ff6b00; }
+  .det-badge.en_progreso { background: rgba(52,152,219,.12); border:1px solid rgba(52,152,219,.3); color: #3498db; }
+  .det-badge.resuelto    { background: rgba(46,204,113,.12); border:1px solid rgba(46,204,113,.3); color: #2ecc71; }
+  .det-badge.alta        { background: rgba(231,76,60,.12);  border:1px solid rgba(231,76,60,.3);  color: #e74c3c; }
+  .det-badge.media       { background: rgba(243,156,18,.1);  border:1px solid rgba(243,156,18,.25);color: #f39c12; }
+  .det-badge.baja        { background: rgba(46,204,113,.1);  border:1px solid rgba(46,204,113,.25);color: #2ecc71; }
+  .det-city { margin-left: auto; font-size: .8rem; color: rgba(255,255,255,.35); display: flex; align-items: center; gap: .3rem; }
+
+  .det-title {
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-size: 1.75rem; font-weight: 800; color: #fff;
+    margin-bottom: .75rem; line-height: 1.2;
+  }
+  .det-desc {
+    color: rgba(255,255,255,.5); line-height: 1.75;
+    font-size: .95rem; margin-bottom: 2rem;
+  }
+
+  .det-divider {
+    height: 1px; background: rgba(255,255,255,.06); margin: 1.75rem 0;
+  }
+
+  .det-grid {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem;
+  }
+  .det-field-label {
+    font-size: .7rem; font-weight: 700; text-transform: uppercase;
+    letter-spacing: .08em; color: rgba(255,255,255,.3);
+    margin-bottom: .3rem; font-family: 'Plus Jakarta Sans', sans-serif;
+  }
+  .det-field-value {
+    font-size: .9rem; font-weight: 600; color: #fff;
+  }
+
+  .det-ia {
+    margin-top: 1.75rem; padding: 1.25rem 1.5rem;
+    background: rgba(255,107,0,.06);
+    border: 1px solid rgba(255,107,0,.2);
+    border-radius: 14px;
+  }
+  .det-ia-header {
+    display: flex; align-items: center; gap: .55rem;
+    margin-bottom: .9rem;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-weight: 700; font-size: .9rem; color: #fff;
+  }
+  .det-ia-header i { color: #ff6b00; }
+  .det-ia-row {
+    display: flex; align-items: center; gap: 1rem;
+    margin-bottom: .6rem;
+  }
+  .det-ia-label { font-size: .82rem; color: rgba(255,255,255,.45); flex-shrink: 0; }
+  .det-ia-val {
+    font-weight: 800; font-size: 1.2rem; color: #ff6b00;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+  }
+  .det-ia-bar {
+    flex: 1; height: 6px; background: rgba(255,255,255,.08);
+    border-radius: 99px; overflow: hidden;
+  }
+  .det-ia-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #ff6b00, #e05500);
+    border-radius: 99px;
+  }
+
+  .det-cta {
+    margin-top: 2rem; padding: 1.5rem;
+    background: rgba(255,255,255,.03);
+    border: 1px solid rgba(255,255,255,.07);
+    border-radius: 14px; text-align: center;
+  }
+  .det-cta p { font-size: .88rem; color: rgba(255,255,255,.4); margin-bottom: 1rem; }
+  .det-cta-btns { display: flex; justify-content: center; gap: .75rem; flex-wrap: wrap; }
+
+  @media (max-width: 640px) {
+    .det-body { padding: 1.5rem; }
+    .det-grid { grid-template-columns: 1fr; }
+    .det-title { font-size: 1.35rem; }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="det-page">
+
+  <a href="{{ url_for('index') }}" class="det-back">
+    <i class="fa fa-arrow-left"></i> Volver al inicio
+  </a>
+
+  <div class="det-card">
+
+    {% if reporte.imagen_principal %}
+      <img src="{{ url_for('uploaded_file', filename=reporte.imagen_principal) }}"
+           alt="{{ reporte.titulo }}" class="det-img">
+    {% else %}
+      <div class="det-img-placeholder">
+        <i class="fa fa-triangle-exclamation" style="font-size:3rem;color:#ff6b00;opacity:.35;"></i>
+      </div>
+    {% endif %}
+
+    <div class="det-body">
+
+      <!-- Estado + ciudad -->
+      <div class="det-meta-top">
+        <span class="det-badge {{ reporte.estado }}">
+          {% if reporte.estado == 'pendiente' %}<i class="fa fa-clock"></i>
+          {% elif reporte.estado == 'aprobado' %}<i class="fa fa-check"></i>
+          {% elif reporte.estado == 'en_progreso' %}<i class="fa fa-wrench"></i>
+          {% elif reporte.estado == 'resuelto' %}<i class="fa fa-circle-check"></i>
+          {% endif %}
+          {{ reporte.estado.replace('_',' ').title() }}
+        </span>
+        {% if reporte.prioridad %}
+        <span class="det-badge {{ reporte.prioridad }}">{{ reporte.prioridad.title() }}</span>
+        {% endif %}
+        <span class="det-city"><i class="fa fa-location-dot"></i> {{ reporte.ciudad }}</span>
+      </div>
+
+      <h1 class="det-title">{{ reporte.titulo }}</h1>
+
+      {% if reporte.descripcion %}
+      <p class="det-desc">{{ reporte.descripcion }}</p>
+      {% endif %}
+
+      <div class="det-divider"></div>
+
+      <div class="det-grid">
+        <div>
+          <div class="det-field-label">Categoría</div>
+          <div class="det-field-value">{{ reporte.categoria_nombre or '—' }}</div>
+        </div>
+        <div>
+          <div class="det-field-label">Reportado por</div>
+          <div class="det-field-value">{{ reporte.usuario_nombre }} {{ reporte.usuario_apellido or '' }}</div>
+        </div>
+        {% if reporte.direccion %}
+        <div>
+          <div class="det-field-label">Dirección</div>
+          <div class="det-field-value">{{ reporte.direccion }}</div>
+        </div>
+        {% endif %}
+        {% if reporte.tecnico_nombre %}
+        <div>
+          <div class="det-field-label">Técnico asignado</div>
+          <div class="det-field-value">{{ reporte.tecnico_nombre }} {{ reporte.tecnico_apellido or '' }}</div>
+        </div>
+        {% endif %}
+        <div>
+          <div class="det-field-label">Fecha de reporte</div>
+          <div class="det-field-value">
+            {{ reporte.creado_en.strftime('%d de %B, %Y') if reporte.creado_en else '—' }}
+          </div>
+        </div>
+        <div>
+          <div class="det-field-label">Vistas</div>
+          <div class="det-field-value">{{ reporte.vistas or 0 }}</div>
+        </div>
+      </div>
+
+      {% if reporte.gravedad_ia %}
+      <div class="det-ia">
+        <div class="det-ia-header">
+          <i class="fa fa-robot"></i> Análisis de Inteligencia Artificial
+        </div>
+        <div class="det-ia-row">
+          <span class="det-ia-label">Gravedad detectada:</span>
+          <span class="det-ia-val">{{ reporte.gravedad_ia|round(0)|int }}%</span>
+          <div class="det-ia-bar">
+            <div class="det-ia-fill" style="width:{{ reporte.gravedad_ia|round(0)|int }}%;"></div>
+          </div>
+        </div>
+      </div>
+      {% endif %}
+
+      <!-- CTA para usuarios no logueados -->
+      {% if not session.usuario_id %}
+      <div class="det-cta">
+        <p>¿Ves un problema similar en tu ciudad? Regístrate y repórtalo en minutos.</p>
+        <div class="det-cta-btns">
+          <a href="{{ url_for('registro') }}" class="btn-ua btn-primary-ua btn-sm-ua">
+            <i class="fa fa-user-plus"></i> Crear cuenta gratis
+          </a>
+          <a href="{{ url_for('mapa') }}" class="btn-ua btn-outline-ua btn-sm-ua">
+            <i class="fa fa-map"></i> Ver mapa de reportes
+          </a>
+        </div>
+      </div>
+      {% endif %}
+
+    </div>
+  </div>
+
+</div>
+{% endblock %}

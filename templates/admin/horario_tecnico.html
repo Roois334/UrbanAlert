@@ -1,0 +1,121 @@
+{% extends 'admin/base_admin.html' %}
+{% block title %}Horario — {{ tecnico.nombre }} {{ tecnico.apellido }}{% endblock %}
+
+{% block content %}
+<style>
+  .hor-admin-hero {
+    background: linear-gradient(135deg,rgba(255,107,0,.08),rgba(0,0,0,0));
+    border: 1px solid rgba(255,107,0,.15); border-radius: 18px;
+    padding: 1.5rem 2rem; margin-bottom: 2rem;
+    display: flex; align-items: center; gap: 1.2rem;
+  }
+  .hor-admin-icon {
+    width: 52px; height: 52px; border-radius: 14px;
+    background: rgba(255,107,0,.12); display: flex; align-items: center;
+    justify-content: center; font-size: 1.4rem; color: var(--naranja);
+  }
+  .hor-admin-title { font-size: 1.3rem; font-weight: 800; color: #fff; }
+  .hor-admin-sub   { font-size: .83rem; color: rgba(255,255,255,.4); margin-top: .15rem; }
+
+  .hor-table { width: 100%; border-collapse: collapse; }
+  .hor-table th {
+    background: rgba(255,107,0,.08); color: var(--naranja);
+    font-size: .72rem; font-weight: 700; text-transform: uppercase;
+    letter-spacing: .07em; padding: .75rem 1.25rem; text-align: left;
+    border-bottom: 1px solid rgba(255,107,0,.15);
+  }
+  .hor-table td {
+    padding: .9rem 1.25rem; border-bottom: 1px solid rgba(255,255,255,.05);
+    font-size: .88rem; color: rgba(255,255,255,.75);
+    background: #131313;
+  }
+  .hor-table tr:hover td { background: #1a1a1a; }
+  .hor-table tr:last-child td { border-bottom: none; }
+
+  .hor-pill {
+    display: inline-flex; align-items: center; gap: .35rem;
+    padding: .28rem .75rem; border-radius: 99px; font-size: .75rem; font-weight: 700;
+  }
+  .hor-pill.avail { background: rgba(46,204,113,.1); border:1px solid rgba(46,204,113,.25); color:#2ecc71; }
+  .hor-pill.off   { background: rgba(255,255,255,.05); border:1px solid rgba(255,255,255,.1); color:rgba(255,255,255,.35); }
+
+  .hor-time-cell { font-family: monospace; font-size: .88rem; color: rgba(255,255,255,.65); }
+  .hor-weekend td { color: rgba(255,255,255,.4); }
+
+  .hor-back {
+    display: inline-flex; align-items: center; gap: .5rem;
+    color: rgba(255,255,255,.5); font-size: .85rem;
+    text-decoration: none; margin-bottom: 1.5rem;
+    transition: color .18s;
+  }
+  .hor-back:hover { color: #fff; }
+
+  .hor-no-horario {
+    text-align: center; padding: 3rem 2rem;
+    color: rgba(255,255,255,.35); font-size: .9rem;
+  }
+  .hor-no-horario i { font-size: 2.5rem; margin-bottom: 1rem; display: block; color: rgba(255,107,0,.3); }
+</style>
+
+<a href="{{ url_for('admin_usuarios', tab='tecnicos') }}" class="hor-back">
+  <i class="fa fa-arrow-left"></i> Volver a técnicos
+</a>
+
+<div class="hor-admin-hero">
+  <div class="hor-admin-icon"><i class="fa fa-calendar-week"></i></div>
+  <div>
+    <div class="hor-admin-title">Horario de {{ tecnico.nombre }} {{ tecnico.apellido }}</div>
+    <div class="hor-admin-sub">Disponibilidad semanal configurada por el técnico</div>
+  </div>
+</div>
+
+{% if rows %}
+<div style="background:#131313;border:1px solid rgba(255,255,255,.07);border-radius:16px;overflow:hidden;">
+  <table class="hor-table">
+    <thead>
+      <tr>
+        <th>Día</th>
+        <th>Horario</th>
+        <th>Estado</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for i, dia in enumerate(dias) %}
+      {% set r = rows.get(i) %}
+      <tr {% if i >= 5 %}class="hor-weekend"{% endif %}>
+        <td style="font-weight:700;color:#fff;">
+          <span style="background:rgba(255,255,255,.07);border-radius:6px;padding:.15rem .5rem;font-size:.75rem;margin-right:.5rem;">
+            {{ ['L','M','X','J','V','S','D'][i] }}
+          </span>
+          {{ dia }}
+        </td>
+        <td class="hor-time-cell">
+          {% if r and r.disponible %}
+            <i class="fa fa-clock" style="color:var(--naranja);margin-right:.4rem"></i>
+            {{ r.hora_inicio|string|truncate(5,True,'') }} — {{ r.hora_fin|string|truncate(5,True,'') }}
+          {% else %}
+            —
+          {% endif %}
+        </td>
+        <td>
+          {% if r and r.disponible %}
+            <span class="hor-pill avail"><i class="fa fa-circle-check"></i> Disponible</span>
+          {% else %}
+            <span class="hor-pill off"><i class="fa fa-circle-xmark"></i> No disponible</span>
+          {% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% else %}
+<div style="background:#131313;border:1px solid rgba(255,255,255,.07);border-radius:16px;">
+  <div class="hor-no-horario">
+    <i class="fa fa-calendar-xmark"></i>
+    Este técnico aún no ha configurado su horario.<br>
+    <small style="opacity:.6">Cuando lo haga, verás su disponibilidad aquí.</small>
+  </div>
+</div>
+{% endif %}
+{% endblock %}
