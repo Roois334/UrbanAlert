@@ -7,9 +7,9 @@
   <link rel="stylesheet" href="{{ url_for('static', filename='css/urban-alert.css') }}">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
   <style>
-    .ad-wrap { display:flex; flex-direction:column; min-height:100vh; background:#0d0d0d; }
+    .adm-wrap { display:flex; flex-direction:column; min-height:100vh; background:#0d0d0d; }
 
-    .ad-navbar {
+    .adm-navbar {
       height: 68px; flex-shrink: 0;
       background: rgba(10,10,10,.97);
       backdrop-filter: blur(20px);
@@ -18,24 +18,24 @@
       padding: 0 2rem; gap: 1.25rem;
       position: sticky; top: 0; z-index: 100;
     }
-    .ad-brand { display:flex; align-items:center; gap:6px; text-decoration:none; font-size:1.2rem; font-weight:800; color:#fff; letter-spacing:-.3px; }
-    .ad-brand-icon {
+    .adm-brand { display:flex; align-items:center; gap:6px; text-decoration:none; font-size:1.2rem; font-weight:800; color:#fff; letter-spacing:-.3px; }
+    .adm-brand-icon {
       width: 38px; height: 38px; border-radius: 11px;
       background: var(--naranja);
       display: flex; align-items: center; justify-content: center;
       color: #fff; font-size: 1.1rem;
     }
-    .ad-brand-text {
+    .adm-brand-text {
       font-family: var(--font-display); font-size: 1.2rem;
       font-weight: 800; color: #fff; letter-spacing: -.02em;
     }
-    .ad-brand-text span { color: var(--naranja); }
+    .adm-brand-text span { color: var(--naranja); }
 
     /* Separador vertical */
-    .ad-sep { width: 1px; height: 24px; background: rgba(255,255,255,.1); flex-shrink: 0; }
+    .adm-sep { width: 1px; height: 24px; background: rgba(255,255,255,.1); flex-shrink: 0; }
 
     .ad-nav { display:flex; align-items:center; gap:.15rem; flex: 1; }
-    .ad-nav-link {
+    .adm-nav-link {
       display: flex; align-items: center; gap: .4rem;
       padding: .48rem .82rem;
       color: rgba(255,255,255,.55);
@@ -43,75 +43,75 @@
       text-decoration: none; border-radius: 9px;
       transition: all .18s; white-space: nowrap;
     }
-    .ad-nav-link:hover { color: #fff; background: rgba(255,255,255,.07); }
-    .ad-nav-link.active { color: var(--naranja); background: rgba(255,107,0,.1); }
-    .ad-nav-link i { font-size: .78rem; }
+    .adm-nav-link:hover { color: #fff; background: rgba(255,255,255,.07); }
+    .adm-nav-link.active { color: var(--naranja); background: rgba(255,107,0,.1); }
+    .adm-nav-link i { font-size: .78rem; }
 
-    .ad-nav-right { display: flex; align-items: center; gap: .75rem; margin-left: auto; }
+    .adm-nav-right { display: flex; align-items: center; gap: .75rem; margin-left: auto; }
 
     /* ── Campana notificaciones admin ── */
-    .ad-bell-wrap { position: relative; }
-    .ad-bell-btn {
+    .adm-bell-wrap { position: relative; }
+    .adm-bell-btn {
       width: 36px; height: 36px; border-radius: 50%;
       background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.1);
       color: rgba(255,255,255,.5); font-size: .9rem;
       display: flex; align-items: center; justify-content: center;
       cursor: pointer; transition: all .18s; flex-shrink: 0; position: relative;
     }
-    .ad-bell-btn:hover { background: rgba(255,107,0,.1); border-color: rgba(255,107,0,.3); color: #FF6B00; }
-    .ad-bell-btn.has-notif { color: #FF6B00; border-color: rgba(255,107,0,.35); }
-    .ad-bell-badge {
+    .adm-bell-btn:hover { background: rgba(255,107,0,.1); border-color: rgba(255,107,0,.3); color: #FF6B00; }
+    .adm-bell-btn.has-notif { color: #FF6B00; border-color: rgba(255,107,0,.35); }
+    .adm-bell-badge {
       position: absolute; top: -4px; right: -4px;
       min-width: 17px; height: 17px; border-radius: 99px;
       background: #FF6B00; color: #fff; font-size: .62rem; font-weight: 800;
       display: flex; align-items: center; justify-content: center; padding: 0 3px;
       border: 2px solid #111; display: none;
     }
-    .ad-notif-panel {
+    .adm-notif-panel {
       display: none; position: absolute; top: calc(100% + .6rem); right: 0;
       width: 340px; background: #1c1c1c; border: 1px solid rgba(255,255,255,.12);
       border-radius: 16px; box-shadow: 0 20px 56px rgba(0,0,0,.65); z-index: 1000;
       overflow: hidden; animation: fadeUp .2s ease;
     }
-    .ad-notif-panel.open { display: block; }
-    .ad-notif-head {
+    .adm-notif-panel.open { display: block; }
+    .adm-notif-head {
       padding: .85rem 1rem .7rem; border-bottom: 1px solid rgba(255,255,255,.07);
       display: flex; align-items: center; justify-content: space-between;
     }
-    .ad-notif-head-title { font-size: .82rem; font-weight: 700; color: #fff; display: flex; align-items: center; gap: .45rem; }
-    .ad-notif-head-title i { color: #FF6B00; }
-    .ad-notif-mark-all { font-size: .72rem; color: rgba(255,255,255,.35); background: none; border: none; cursor: pointer; transition: color .15s; }
-    .ad-notif-mark-all:hover { color: #FF6B00; }
-    .ad-notif-list { max-height: 340px; overflow-y: auto; }
-    .ad-notif-list::-webkit-scrollbar { width: 4px; }
-    .ad-notif-list::-webkit-scrollbar-track { background: transparent; }
-    .ad-notif-list::-webkit-scrollbar-thumb { background: rgba(255,255,255,.1); border-radius: 99px; }
-    .ad-notif-item {
+    .adm-notif-head-title { font-size: .82rem; font-weight: 700; color: #fff; display: flex; align-items: center; gap: .45rem; }
+    .adm-notif-head-title i { color: #FF6B00; }
+    .adm-notif-mark-all { font-size: .72rem; color: rgba(255,255,255,.35); background: none; border: none; cursor: pointer; transition: color .15s; }
+    .adm-notif-mark-all:hover { color: #FF6B00; }
+    .adm-notif-list { max-height: 340px; overflow-y: auto; }
+    .adm-notif-list::-webkit-scrollbar { width: 4px; }
+    .adm-notif-list::-webkit-scrollbar-track { background: transparent; }
+    .adm-notif-list::-webkit-scrollbar-thumb { background: rgba(255,255,255,.1); border-radius: 99px; }
+    .adm-notif-item {
       display: flex; gap: .65rem; align-items: flex-start;
       padding: .75rem 1rem; border-bottom: 1px solid rgba(255,255,255,.05);
       cursor: pointer; transition: background .15s;
     }
-    .ad-notif-item:last-child { border-bottom: none; }
-    .ad-notif-item:hover { background: rgba(255,255,255,.04); }
-    .ad-notif-item.unread { background: rgba(255,107,0,.04); }
-    .ad-notif-item.unread:hover { background: rgba(255,107,0,.07); }
-    .ad-notif-icon {
+    .adm-notif-item:last-child { border-bottom: none; }
+    .adm-notif-item:hover { background: rgba(255,255,255,.04); }
+    .adm-notif-item.unread { background: rgba(255,107,0,.04); }
+    .adm-notif-item.unread:hover { background: rgba(255,107,0,.07); }
+    .adm-notif-icon {
       width: 32px; height: 32px; border-radius: 50%; flex-shrink: 0;
       display: flex; align-items: center; justify-content: center; font-size: .8rem;
     }
-    .ad-notif-icon.info        { background: rgba(52,152,219,.15);  color: #3498db; }
-    .ad-notif-icon.exito       { background: rgba(46,204,113,.15);  color: #2ecc71; }
-    .ad-notif-icon.advertencia { background: rgba(255,193,7,.15);   color: #ffc107; }
-    .ad-notif-icon.error       { background: rgba(231,76,60,.15);   color: #e74c3c; }
-    .ad-notif-body { flex: 1; min-width: 0; }
-    .ad-notif-ntitle { font-size: .8rem; font-weight: 700; color: #fff; margin-bottom: .15rem; }
-    .ad-notif-msg { font-size: .75rem; color: rgba(255,255,255,.45); line-height: 1.45; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .ad-notif-time { font-size: .68rem; color: rgba(255,255,255,.22); margin-top: .25rem; }
-    .ad-notif-empty { text-align: center; padding: 2rem 1rem; color: rgba(255,255,255,.25); font-size: .8rem; }
-    .ad-notif-empty i { display: block; font-size: 1.6rem; margin-bottom: .5rem; opacity: .4; }
+    .adm-notif-icon.info        { background: rgba(52,152,219,.15);  color: #3498db; }
+    .adm-notif-icon.exito       { background: rgba(46,204,113,.15);  color: #2ecc71; }
+    .adm-notif-icon.advertencia { background: rgba(255,193,7,.15);   color: #ffc107; }
+    .adm-notif-icon.error       { background: rgba(231,76,60,.15);   color: #e74c3c; }
+    .adm-notif-body { flex: 1; min-width: 0; }
+    .adm-notif-ntitle { font-size: .8rem; font-weight: 700; color: #fff; margin-bottom: .15rem; }
+    .adm-notif-msg { font-size: .75rem; color: rgba(255,255,255,.45); line-height: 1.45; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .adm-notif-time { font-size: .68rem; color: rgba(255,255,255,.22); margin-top: .25rem; }
+    .adm-notif-empty { text-align: center; padding: 2rem 1rem; color: rgba(255,255,255,.25); font-size: .8rem; }
+    .adm-notif-empty i { display: block; font-size: 1.6rem; margin-bottom: .5rem; opacity: .4; }
 
-    .ad-user-wrap { position: relative; }
-    .ad-avatar-btn {
+    .adm-user-wrap { position: relative; }
+    .adm-avatar-btn {
       width: 36px; height: 36px; border-radius: 50%;
       background: var(--naranja);
       display: flex; align-items: center; justify-content: center;
@@ -119,118 +119,118 @@
       cursor: pointer; border: none; flex-shrink: 0;
       transition: box-shadow .18s;
     }
-    .ad-avatar-btn:hover { box-shadow: 0 0 0 3px rgba(255,107,0,.3); }
-    .ad-dropdown {
+    .adm-avatar-btn:hover { box-shadow: 0 0 0 3px rgba(255,107,0,.3); }
+    .adm-dropdown {
       display: none; position: absolute; top: calc(100% + .6rem); right: 0;
       background: #1c1c1c; border: 1px solid rgba(255,255,255,.12);
       border-radius: 14px; padding: .5rem; min-width: 200px;
       box-shadow: 0 16px 48px rgba(0,0,0,.6); z-index: 999;
       animation: fadeUp .2s ease;
     }
-    .ad-dropdown.open { display: block; }
-    .ad-dropdown-info {
+    .adm-dropdown.open { display: block; }
+    .adm-dropdown-info {
       padding: .75rem .9rem .6rem;
       border-bottom: 1px solid rgba(255,255,255,.08);
       margin-bottom: .4rem;
     }
-    .ad-dropdown-name { font-size: .88rem; font-weight: 700; color: #fff; }
-    .ad-dropdown-role { font-size: .72rem; color: var(--naranja); font-weight: 600; margin-top: .1rem; }
-    .ad-dropdown-item {
+    .adm-dropdown-name { font-size: .88rem; font-weight: 700; color: #fff; }
+    .adm-dropdown-role { font-size: .72rem; color: var(--naranja); font-weight: 600; margin-top: .1rem; }
+    .adm-dropdown-item {
       display: flex; align-items: center; gap: .55rem;
       padding: .55rem .9rem; border-radius: 9px;
       color: rgba(255,255,255,.55); font-size: .83rem; font-weight: 500;
       text-decoration: none; transition: all .15s;
     }
-    .ad-dropdown-item:hover { color: #fff; background: rgba(255,255,255,.07); }
-    .ad-dropdown-item.danger:hover { color: #e74c3c; background: rgba(231,76,60,.1); }
-    .ad-dropdown-item i { width: 16px; text-align: center; }
+    .adm-dropdown-item:hover { color: #fff; background: rgba(255,255,255,.07); }
+    .adm-dropdown-item.danger:hover { color: #e74c3c; background: rgba(231,76,60,.1); }
+    .adm-dropdown-item i { width: 16px; text-align: center; }
 
-    .ad-content { flex: 1; background: #0d0d0d; }
+    .adm-content { flex: 1; background: #0d0d0d; }
 
-    .ad-flash-wrap { position: fixed; bottom: 1.5rem; right: 1.5rem; z-index: 9999; min-width: 300px; }
-    .ad-flash {
+    .adm-flash-wrap { position: fixed; bottom: 1.5rem; right: 1.5rem; z-index: 9999; min-width: 300px; }
+    .adm-flash {
       padding: .9rem 1.2rem; border-radius: 12px;
       font-size: .875rem; font-weight: 600;
       display: flex; align-items: center; gap: .6rem;
       margin-bottom: .5rem; animation: fadeUp .35s ease both;
     }
-    .ad-flash.success { background: rgba(46,204,113,.12); border:1px solid rgba(46,204,113,.3); color: #2ecc71; }
-    .ad-flash.danger  { background: rgba(231,76,60,.12);  border:1px solid rgba(231,76,60,.3);  color: #e74c3c; }
-    .ad-flash.warning { background: rgba(255,107,0,.12);  border:1px solid rgba(255,107,0,.3);  color: var(--naranja); }
-    .ad-flash.info    { background: rgba(52,152,219,.12); border:1px solid rgba(52,152,219,.3); color: #3498db; }
+    .adm-flash.success { background: rgba(46,204,113,.12); border:1px solid rgba(46,204,113,.3); color: #2ecc71; }
+    .adm-flash.danger  { background: rgba(231,76,60,.12);  border:1px solid rgba(231,76,60,.3);  color: #e74c3c; }
+    .adm-flash.warning { background: rgba(255,107,0,.12);  border:1px solid rgba(255,107,0,.3);  color: var(--naranja); }
+    .adm-flash.info    { background: rgba(52,152,219,.12); border:1px solid rgba(52,152,219,.3); color: #3498db; }
 
     @media (max-width: 900px) {
-      .ad-navbar { padding: 0 1rem; gap: .75rem; }
+      .adm-navbar { padding: 0 1rem; gap: .75rem; }
       .ad-nav { display: none; }
-      .ad-content .page-body { padding: 1rem; }
+      .adm-content .page-body { padding: 1rem; }
     }
   </style>
   {% block head %}{% endblock %}
 </head>
 <body>
-<div class="ad-wrap">
+<div class="adm-wrap">
 
-  <nav class="ad-navbar">
-    <a href="{{ url_for('admin_dashboard') }}" class="ad-brand">
+  <nav class="adm-navbar">
+    <a href="{{ url_for('admin_dashboard') }}" class="adm-brand">
       <img src="{{ url_for('static', filename='images/logo.png') }}" alt="UrbanAlert" style="height:64px;width:auto;object-fit:contain;filter:drop-shadow(0 0 10px rgba(255,107,0,0.7));">Urban<span>Alert</span>
     </a>
 
-    <div class="ad-sep"></div>
+    <div class="adm-sep"></div>
 
     <div class="ad-nav">
       <a href="{{ url_for('admin_dashboard') }}"
-         class="ad-nav-link {% if request.endpoint == 'admin_dashboard' %}active{% endif %}">
+         class="adm-nav-link {% if request.endpoint == 'admin_dashboard' %}active{% endif %}">
         <i class="fa fa-chart-line"></i> Dashboard
       </a>
       <a href="{{ url_for('admin_usuarios') }}"
-         class="ad-nav-link {% if request.endpoint == 'admin_usuarios' %}active{% endif %}">
+         class="adm-nav-link {% if request.endpoint == 'admin_usuarios' %}active{% endif %}">
         <i class="fa fa-users"></i> Usuarios
       </a>
       <a href="{{ url_for('admin_reportes') }}"
-         class="ad-nav-link {% if request.endpoint == 'admin_reportes' %}active{% endif %}">
+         class="adm-nav-link {% if request.endpoint == 'admin_reportes' %}active{% endif %}">
         <i class="fa fa-flag"></i> Reportes
       </a>
       <a href="{{ url_for('admin_mapa') }}"
-         class="ad-nav-link {% if request.endpoint == 'admin_mapa' %}active{% endif %}">
+         class="adm-nav-link {% if request.endpoint == 'admin_mapa' %}active{% endif %}">
         <i class="fa fa-map"></i> Mapa
       </a>
       <a href="{{ url_for('admin_estadisticas') }}"
-         class="ad-nav-link {% if request.endpoint == 'admin_estadisticas' %}active{% endif %}">
+         class="adm-nav-link {% if request.endpoint == 'admin_estadisticas' %}active{% endif %}">
         <i class="fa fa-chart-bar"></i> Estadísticas
       </a>
     </div>
 
-    <div class="ad-nav-right">
+    <div class="adm-nav-right">
       <!-- Campana notificaciones -->
-      <div class="ad-bell-wrap">
-        <button class="ad-bell-btn" id="adBellBtn" onclick="toggleAdNotifPanel()">
+      <div class="adm-bell-wrap">
+        <button class="adm-bell-btn" id="adBellBtn" onclick="toggleAdNotifPanel()">
           <i class="fa fa-bell"></i>
-          <span class="ad-bell-badge" id="adBellBadge">0</span>
+          <span class="adm-bell-badge" id="adBellBadge">0</span>
         </button>
-        <div class="ad-notif-panel" id="adNotifPanel">
-          <div class="ad-notif-head">
-            <div class="ad-notif-head-title"><i class="fa fa-bell"></i> Notificaciones</div>
-            <button class="ad-notif-mark-all" onclick="adMarcarTodasLeidas()">Marcar todas leídas</button>
+        <div class="adm-notif-panel" id="adNotifPanel">
+          <div class="adm-notif-head">
+            <div class="adm-notif-head-title"><i class="fa fa-bell"></i> Notificaciones</div>
+            <button class="adm-notif-mark-all" onclick="adMarcarTodasLeidas()">Marcar todas leídas</button>
           </div>
-          <div class="ad-notif-list" id="adNotifList">
-            <div class="ad-notif-empty"><i class="fa fa-bell-slash"></i>Sin notificaciones</div>
+          <div class="adm-notif-list" id="adNotifList">
+            <div class="adm-notif-empty"><i class="fa fa-bell-slash"></i>Sin notificaciones</div>
           </div>
         </div>
       </div>
 
-      <div class="ad-user-wrap">
-        <button class="ad-avatar-btn" onclick="toggleDropdown('adDrop')">
+      <div class="adm-user-wrap">
+        <button class="adm-avatar-btn" onclick="toggleDropdown('adDrop')">
           {{ session.nombre[0]|upper if session.nombre else 'A' }}
         </button>
-        <div class="ad-dropdown" id="adDrop">
-          <div class="ad-dropdown-info">
-            <div class="ad-dropdown-name">{{ session.nombre }}</div>
-            <div class="ad-dropdown-role">{{ session.rol|title if session.rol else 'Administrador' }}</div>
+        <div class="adm-dropdown" id="adDrop">
+          <div class="adm-dropdown-info">
+            <div class="adm-dropdown-name">{{ session.nombre }}</div>
+            <div class="adm-dropdown-role">{{ session.rol|title if session.rol else 'Administrador' }}</div>
           </div>
-          <a href="{{ url_for('mi_perfil') }}" class="ad-dropdown-item">
+          <a href="{{ url_for('mi_perfil') }}" class="adm-dropdown-item">
             <i class="fa fa-user"></i> Mi perfil
           </a>
-          <a href="{{ url_for('logout') }}" class="ad-dropdown-item danger">
+          <a href="{{ url_for('logout') }}" class="adm-dropdown-item danger">
             <i class="fa fa-right-from-bracket"></i> Cerrar sesión
           </a>
         </div>
@@ -240,15 +240,15 @@
 
   {% with messages = get_flashed_messages(with_categories=true) %}
     {% if messages %}
-    <div class="ad-flash-wrap">
+    <div class="adm-flash-wrap">
       {% for cat, msg in messages %}
-      <div class="ad-flash {{ cat }}"><i class="fa fa-circle-check"></i> {{ msg }}</div>
+      <div class="adm-flash {{ cat }}"><i class="fa fa-circle-check"></i> {{ msg }}</div>
       {% endfor %}
     </div>
     {% endif %}
   {% endwith %}
 
-  <div class="ad-content">
+  <div class="adm-content">
     {% block content %}{% endblock %}
   </div>
 
@@ -387,15 +387,15 @@ function toggleDropdown(id) {
   el.classList.toggle('open');
 }
 document.addEventListener('click', function(e) {
-  if (!e.target.closest('.ad-user-wrap')) {
-    document.querySelectorAll('.ad-dropdown').forEach(d => d.classList.remove('open'));
+  if (!e.target.closest('.adm-user-wrap')) {
+    document.querySelectorAll('.adm-dropdown').forEach(d => d.classList.remove('open'));
   }
-  if (!e.target.closest('.ad-bell-wrap')) {
+  if (!e.target.closest('.adm-bell-wrap')) {
     document.getElementById('adNotifPanel').classList.remove('open');
   }
 });
 setTimeout(() => {
-  document.querySelectorAll('.ad-flash').forEach(el => {
+  document.querySelectorAll('.adm-flash').forEach(el => {
     el.style.transition = 'opacity .4s';
     el.style.opacity = '0';
     setTimeout(() => el.remove(), 400);
@@ -425,16 +425,16 @@ function adCargarNotificaciones() {
 function adRenderNotifs(lista) {
   const el = document.getElementById('adNotifList');
   if (!lista.length) {
-    el.innerHTML = '<div class="ad-notif-empty"><i class="fa fa-bell-slash"></i>Sin notificaciones</div>';
+    el.innerHTML = '<div class="adm-notif-empty"><i class="fa fa-bell-slash"></i>Sin notificaciones</div>';
     return;
   }
   el.innerHTML = lista.map(n => `
-    <div class="ad-notif-item ${n.leida ? '' : 'unread'}" onclick="adLeerNotif(${n.id}, this)">
-      <div class="ad-notif-icon ${n.tipo}"><i class="fa ${AD_ICONOS[n.tipo]||'fa-bell'}"></i></div>
-      <div class="ad-notif-body">
-        <div class="ad-notif-ntitle">${n.titulo}</div>
-        <div class="ad-notif-msg">${n.mensaje}</div>
-        <div class="ad-notif-time"><i class="fa fa-clock" style="margin-right:.3rem"></i>${adFormatTime(n.creado_en)}</div>
+    <div class="adm-notif-item ${n.leida ? '' : 'unread'}" onclick="adLeerNotif(${n.id}, this)">
+      <div class="adm-notif-icon ${n.tipo}"><i class="fa ${AD_ICONOS[n.tipo]||'fa-bell'}"></i></div>
+      <div class="adm-notif-body">
+        <div class="adm-notif-ntitle">${n.titulo}</div>
+        <div class="adm-notif-msg">${n.mensaje}</div>
+        <div class="adm-notif-time"><i class="fa fa-clock" style="margin-right:.3rem"></i>${adFormatTime(n.creado_en)}</div>
       </div>
     </div>`).join('');
 }
